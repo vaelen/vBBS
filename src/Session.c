@@ -111,8 +111,9 @@ void Connected(Connection *conn)
 
 void NeoFetch(Connection *conn)
 {
-    FILE *pipe;
     char buffer[256];
+#ifdef _POSIX_VERSION
+    FILE *pipe;
 
     pipe = popen("neofetch", "r");
     if (pipe == NULL)
@@ -131,5 +132,12 @@ void NeoFetch(Connection *conn)
     fflush(conn->outputStream);
     fgets(buffer, sizeof(buffer), conn->inputStream);
     WriteToConnection(conn, "\n");
+#else
+    WriteToConnection(conn, "NeoFetch is not supported on this platform.\n");
+    WriteToConnection(conn, "Press Enter to continue...\n");
+    fflush(conn->outputStream);
+    fgets(buffer, sizeof(buffer), conn->inputStream);
+    WriteToConnection(conn, "\n");
+#endif
 }
 
