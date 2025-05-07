@@ -32,5 +32,8 @@ obj/%.o : src/%.c include/vBBS/%.h
 obj/Test%.o : src/Test%.c
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
+obj/vBBS.o : src/vBBS.c
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+
 clean:
 	rm -f bin/vBBS obj/*.o
