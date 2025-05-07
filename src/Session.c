@@ -129,13 +129,11 @@ void NeoFetch(Connection *conn)
     pclose(pipe);
     WriteToConnection(conn, "\n");
     WriteToConnection(conn, "Press Enter to continue...\n");
-    fflush(conn->outputStream);
     fgets(buffer, sizeof(buffer), conn->inputStream);
     WriteToConnection(conn, "\n");
 #else
     WriteToConnection(conn, "NeoFetch is not supported on this platform.\n");
     WriteToConnection(conn, "Press Enter to continue...\n");
-    fflush(conn->outputStream);
     fgets(buffer, sizeof(buffer), conn->inputStream);
     WriteToConnection(conn, "\n");
 #endif
