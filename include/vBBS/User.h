@@ -38,7 +38,7 @@ typedef struct
 {
     uint32_t userID;
     char username[50];
-    char password[50];
+    char pwHash[41];
     char email[100];
     UserType userType;
 } User;
