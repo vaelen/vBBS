@@ -5,7 +5,7 @@ LDFLAGS =
 
 OBJS = obj/Log.o obj/ConsoleConnection.o obj/SerialConnection.o \
 	   obj/ModemConnection.o obj/TelnetConnection.o obj/Connection.o \
-	   obj/User.o obj/Terminal.o obj/Session.o obj/CRC.o
+	   obj/User.o obj/Terminal.o obj/Session.o obj/CRC.o obj/SHA1.o
 
 TESTS = bin/testCRC
 
