@@ -8,11 +8,11 @@ OBJS = 	$(patsubst src/%.c,obj/%.o,$(wildcard src/*.c)) \
 
 TESTS = $(patsubst src/tests/%.c,bin/tests/%,$(wildcard src/tests/*.c))
 
-all: bin/vBBS
+all: bin/vbbs
 
 test: $(TESTS)
-	./bin/tests/CRC
-	./bin/tests/RingBuff
+	./bin/tests/crc
+	./bin/tests/rb
 	
 obj:
 	mkdir -p obj
@@ -24,19 +24,19 @@ bin:
 	mkdir -p bin
 	mkdir -p bin/tests
 
-bin/vBBS: obj/bin/vBBS.o $(OBJS) bin
-	$(LD) -o bin/vBBS obj/bin/vBBS.o $(OBJS) $(CFLAGS)
+bin/vbbs: obj/bin/vbbs.o $(OBJS) bin
+	$(LD) -o bin/vbbs obj/bin/vbbs.o $(OBJS) $(CFLAGS)
 
-bin/tests/CRC: obj/tests/CRC.o obj/CRC.o bin
-	$(LD) -o bin/tests/CRC obj/tests/CRC.o obj/CRC.o $(CFLAGS)
+bin/tests/crc: obj/tests/crc.o obj/crc.o bin
+	$(LD) -o bin/tests/crc obj/tests/crc.o obj/crc.o $(CFLAGS)
 
-bin/tests/RingBuff: obj/tests/RingBuff.o obj/RingBuffer.o bin
-	$(LD) -o bin/tests/RingBuff obj/tests/RingBuff.o obj/RingBuffer.o $(CFLAGS)
+bin/tests/rb: obj/tests/rb.o obj/rb.o bin
+	$(LD) -o bin/tests/rb obj/tests/rb.o obj/rb.o $(CFLAGS)
 
-obj/%.o : src/%.c include/vBBS/%.h obj
+obj/%.o : src/%.c include/vbbs/%.h obj
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-obj/conn/%.o : src/conn/%.c include/vBBS/conn/%.h obj
+obj/conn/%.o : src/conn/%.c include/vbbs/conn/%.h obj
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 obj/bin/%.o : src/bin/%.c obj
