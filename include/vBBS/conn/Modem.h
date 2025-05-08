@@ -1,5 +1,5 @@
-#ifndef VBBS_SERIALCONNECTION_H
-#define VBBS_SERIALCONNECTION_H
+#ifndef VBBS_CONN_MODEM_H
+#define VBBS_CONN_MODEM_H
 
 /*
 Copyright (c) 2025, Andrew Young
@@ -32,6 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vBBS/User.h>
 #include <vBBS/Terminal.h>
 
-void DisconnectSerial(Connection *conn);
+void DisconnectModem(Connection *conn);
 
 #endif

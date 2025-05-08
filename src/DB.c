@@ -24,21 +24,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <vBBS/Types.h>
-
-#include <stdio.h>
-#include <string.h>
+#include <vBBS/DB.h>
 #include <vBBS/Log.h>
-#include <vBBS/Connection.h>
-#include <vBBS/ConsoleConnection.h>
 
-void DisconnectSerial(Connection *conn)
-{
-    if (conn->inputStream != stdin)
-    {
-        fclose(conn->inputStream);
-    }
-    if (conn->outputStream != stdout)
-    {
-        fclose(conn->outputStream);
-    }
-}

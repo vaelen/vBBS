@@ -30,10 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdarg.h>
 #include <vBBS/Log.h>
 #include <vBBS/Connection.h>
-#include <vBBS/ConsoleConnection.h>
-#include <vBBS/SerialConnection.h>
-#include <vBBS/ModemConnection.h>
-#include <vBBS/TelnetConnection.h>
+#include <vBBS/conn/Console.h>
+#include <vBBS/conn/Serial.h>
+#include <vBBS/conn/Modem.h>
+#include <vBBS/conn/Telnet.h>
 
 void InitConnection(Connection *conn)
 {
@@ -131,7 +131,7 @@ void Disconnect(Connection *conn)
             DisconnectModem(conn);
             break;
         case TELNET:
-            DisconnectTelnet(conn);
+            DestroyTelnetConnection(conn);
             break;
         default:
             Warning("Unknown connection type: %d.\n", conn->connectionType);

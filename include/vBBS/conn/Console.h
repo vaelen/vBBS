@@ -1,5 +1,5 @@
-#ifndef VBBS_CONSOLECONNECTION_H
-#define VBBS_CONSOLECONNECTION_H
+#ifndef VBBS_CONN_CONSOLE_H
+#define VBBS_CONN_CONSOLE_H
 
 /*
 Copyright (c) 2025, Andrew Young

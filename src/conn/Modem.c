@@ -1,6 +1,3 @@
-#ifndef VBBS_MODEMCONNECTION_H
-#define VBBS_MODEMCONNECTION_H
-
 /*
 Copyright (c) 2025, Andrew Young
 
@@ -29,9 +26,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vBBS/Types.h>
 
 #include <stdio.h>
-#include <vBBS/User.h>
-#include <vBBS/Terminal.h>
+#include <string.h>
+#include <vBBS/Log.h>
+#include <vBBS/Connection.h>
+#include <vBBS/conn/Modem.h>
 
-void DisconnectModem(Connection *conn);
-
-#endif
+void DisconnectModem(Connection *conn)
+{
+    if (conn->inputStream != stdin)
+    {
+        fclose(conn->inputStream);
+    }
+    if (conn->outputStream != stdout)
+    {
+        fclose(conn->outputStream);
+    }
+}

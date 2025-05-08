@@ -28,8 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <vBBS/Log.h>
 #include <vBBS/Connection.h>
-#include <vBBS/ConsoleConnection.h>
-#include <vBBS/TelnetConnection.h>
+#include <vBBS/conn/Telnet.h>
 
 /***** UNIX Implementation Using Berkeley Sockets *****/
 
@@ -151,14 +150,14 @@ Connection* TelnetListenerAccept(TelnetListener *listener)
     return conn;
 }
 
-void CloseTelnetListener(TelnetListener *listener) 
+void DestroyTelnetListener(TelnetListener *listener) 
 {
     close(listener->socket);
     Info("Telnet: Listener closed on port %d\n", listener->port);
     free(listener);
 }
 
-void DisconnectTelnet(Connection *conn)
+void DestroyTelnetConnection(Connection *conn)
 {
     if (conn == NULL || conn->connectionType != TELNET)
     {

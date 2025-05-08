@@ -3,37 +3,47 @@ LD = clang
 CFLAGS = -Iinclude -Wall -Wextra -pedantic -std=gnu89 
 LDFLAGS = 
 
-OBJS = obj/Log.o obj/ConsoleConnection.o obj/SerialConnection.o \
-	   obj/ModemConnection.o obj/TelnetConnection.o obj/Connection.o \
-	   obj/User.o obj/Terminal.o obj/Session.o obj/CRC.o obj/SHA1.o
+OBJS = 	$(patsubst src/%.c,obj/%.o,$(wildcard src/*.c)) \
+		$(patsubst src/conn/%.c,obj/conn/%.o,$(wildcard src/conn/*.c))
 
-TESTS = bin/testCRC
+TESTS = $(patsubst src/tests/%.c,bin/tests/%,$(wildcard src/tests/*.c))
 
 all: bin/vBBS
 
 test: $(TESTS)
-	./bin/testCRC
+	./bin/tests/CRC
+	./bin/tests/RingBuff
 	
 obj:
 	mkdir -p obj
+	mkdir -p obj/conn
+	mkdir -p obj/tests
+	mkdir -p obj/bin
 
 bin:
 	mkdir -p bin
+	mkdir -p bin/tests
 
-bin/vBBS: bin obj $(OBJS) obj/vBBS.o
-	$(LD) -o bin/vBBS obj/vBBS.o $(OBJS) $(LDFLAGS)
+bin/vBBS: obj/bin/vBBS.o $(OBJS) bin
+	$(LD) -o bin/vBBS obj/bin/vBBS.o $(OBJS) $(CFLAGS)
 
-bin/testCRC: bin obj obj/CRC.o obj/TestCRC.o
-	$(LD) -o bin/testCRC obj/TestCRC.o obj/CRC.o $(LDFLAGS)
+bin/tests/CRC: obj/tests/CRC.o obj/CRC.o bin
+	$(LD) -o bin/tests/CRC obj/tests/CRC.o obj/CRC.o $(CFLAGS)
 
-obj/%.o : src/%.c include/vBBS/%.h
+bin/tests/RingBuff: obj/tests/RingBuff.o obj/RingBuffer.o bin
+	$(LD) -o bin/tests/RingBuff obj/tests/RingBuff.o obj/RingBuffer.o $(CFLAGS)
+
+obj/%.o : src/%.c include/vBBS/%.h obj
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-obj/Test%.o : src/Test%.c
+obj/conn/%.o : src/conn/%.c include/vBBS/conn/%.h obj
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-obj/vBBS.o : src/vBBS.c
+obj/bin/%.o : src/bin/%.c obj
+	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
+
+obj/tests/%.o : src/tests/%.c obj
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 clean:
-	rm -f bin/vBBS obj/*.o
+	rm -rf bin obj

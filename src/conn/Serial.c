@@ -1,6 +1,3 @@
-#ifndef VBBS_H
-#define VBBS_H
-
 /*
 Copyright (c) 2025, Andrew Young
 
@@ -30,17 +27,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h> 
-
 #include <vBBS/Log.h>
-#include <vBBS/Terminal.h>
 #include <vBBS/Connection.h>
-#include <vBBS/User.h>
-#include <vBBS/Session.h>
-
-#include <vBBS/conn/Console.h>
 #include <vBBS/conn/Serial.h>
-#include <vBBS/conn/Modem.h>
-#include <vBBS/conn/Telnet.h>
 
-#endif /* VBBS_H */
+void DisconnectSerial(Connection *conn)
+{
+    if (conn->inputStream != stdin)
+    {
+        fclose(conn->inputStream);
+    }
+    if (conn->outputStream != stdout)
+    {
+        fclose(conn->outputStream);
+    }
+}

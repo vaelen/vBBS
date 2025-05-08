@@ -62,6 +62,6 @@ int main(void) {
     testChecksum();
     testCRC16_CCITT();
     testCRC16_XMODEM();
-
+    printf("\n");
     return 0;
 }
