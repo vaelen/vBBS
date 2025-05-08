@@ -1,5 +1,5 @@
-#ifndef VBBS_H
-#define VBBS_H
+#ifndef _VBBS_DB_H
+#define _VBBS_DB_H
 
 /*
 Copyright (c) 2025, Andrew Young
@@ -28,19 +28,20 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <vBBS/Types.h>
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h> 
+typedef enum {
+    DB_TYPE_BOOL = 0,
+    DB_TYPE_INT8 = 1,
+    DB_TYPE_UINT8 = 2,
+    DB_TYPE_INT16 = 3,
+    DB_TYPE_UINT16 = 4,
+    DB_TYPE_INT32 = 5,
+    DB_TYPE_UINT32 = 6,
+    DB_TYPE_FLOAT = 7,
+    DB_TYPE_DOUBLE = 8,
+    DB_TYPE_STRING = 9,
+    DB_TYPE_TEXT = 10,
+    DB_TYPE_BLOB = 11,
+    DB_TYPE_TIMESTAMP = 12
+} DataType;
 
-#include <vBBS/Log.h>
-#include <vBBS/Terminal.h>
-#include <vBBS/Connection.h>
-#include <vBBS/User.h>
-#include <vBBS/Session.h>
-
-#include <vBBS/conn/Console.h>
-#include <vBBS/conn/Serial.h>
-#include <vBBS/conn/Modem.h>
-#include <vBBS/conn/Telnet.h>
-
-#endif /* VBBS_H */
+#endif

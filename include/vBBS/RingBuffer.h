@@ -1,3 +1,6 @@
+#ifndef VBBS_RINGBUFFER_H
+#define VBBS_RINGBUFFER_H
+
 /*
 Copyright (c) 2025, Andrew Young
 
@@ -25,20 +28,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <vBBS/Types.h>
 
-#include <stdio.h>
-#include <string.h>
-#include <vBBS/Log.h>
-#include <vBBS/Connection.h>
-#include <vBBS/ConsoleConnection.h>
-
-void DisconnectConsole(Connection *conn)
+/** 
+ * A FIFO queue with a limited size that overwrites the oldest member
+ * when full.
+ */
+typedef struct
 {
-    if (conn->inputStream != stdin)
-    {
-        fclose(conn->inputStream);
-    }
-    if (conn->outputStream != stdout)
-    {
-        fclose(conn->outputStream);
-    }
-}
+    uint8_t *buffer;     // Pointer to the buffer
+    size_t head;         // Index of the head of the buffer
+    size_t tail;         // Index of the tail of the buffer
+    size_t size;         // Current size of the buffer
+    size_t maxSize;      // Maximum size of the buffer
+} RingBuffer;
+
+RingBuffer* NewRingBuffer(size_t size);
+void DestroyRingBuffer(RingBuffer *rb);
+void WriteRingBuffer(RingBuffer *rb, const uint8_t *data, size_t size);
+void ReadRingBuffer(RingBuffer *rb, uint8_t *data, size_t size);
+void ClearRingBuffer(RingBuffer *rb);
+bool IsRingBufferEmpty(RingBuffer *rb);
+bool IsRingBufferFull(RingBuffer *rb);
+void PushRingBuffer(RingBuffer *rb, uint8_t byte);
+uint8_t PopRingBuffer(RingBuffer *rb);
+
+#endif

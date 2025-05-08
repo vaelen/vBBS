@@ -23,43 +23,22 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <vBBS.h>
+#include <vBBS/Types.h>
 
-int main(int argc, char *argv[])
+#include <stdio.h>
+#include <string.h>
+#include <vBBS/Log.h>
+#include <vBBS/Connection.h>
+#include <vBBS/conn/Console.h>
+
+void DisconnectConsole(Connection *conn)
 {
-    Connection *conn;
-    TelnetListener *listener;
-    int port = 23;
-    
-    if (argc > 1)
+    if (conn->inputStream != stdin)
     {
-        port = atoi(argv[1]);
+        fclose(conn->inputStream);
     }
-
-    Info("Hello, vBBS!");
-
-    listener = NewTelnetListener(port);
-    if (listener == NULL)
+    if (conn->outputStream != stdout)
     {
-        Error("Failed to create Telnet listener on port %d.", port);
-        return EXIT_FAILURE;
+        fclose(conn->outputStream);
     }
-    
-    conn = TelnetListenerAccept(listener);
-    if (conn == NULL)
-    {
-        Error("Failed to accept Telnet connection.");
-        CloseTelnetListener(listener);
-        return EXIT_FAILURE;
-    }
-
-    Connected(conn);
-    if (conn->connectionStatus == AUTHENTICATED)
-    {
-        NeoFetch(conn);
-    }
-
-    CloseTelnetListener(listener);
-
-    return EXIT_SUCCESS;
 }

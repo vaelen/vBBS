@@ -1,5 +1,5 @@
-#ifndef VBBS_TELNETCONNECTION_H
-#define VBBS_TELNETCONNECTION_H
+#ifndef VBBS_CONN_SERIAL_H
+#define VBBS_CONN_SERIAL_H
 
 /*
 Copyright (c) 2025, Andrew Young
@@ -32,25 +32,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vBBS/User.h>
 #include <vBBS/Terminal.h>
 
-#ifdef __unix__
-#include <arpa/inet.h>
-#endif
-
-typedef struct
-{
-   int port;
-#ifdef __unix__
-   int socket;
-   struct sockaddr_in serverAddress;
-#endif
-} TelnetListener;
-
-TelnetListener* NewTelnetListener(int port);
-void CloseTelnetListener(TelnetListener *listener);
-
-/** This method will block until a connection is made. */
-Connection* TelnetListenerAccept(TelnetListener *listener);
-
-void DisconnectTelnet(Connection *conn);
+void DisconnectSerial(Connection *conn);
 
 #endif
