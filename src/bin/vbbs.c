@@ -28,6 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 int main(int argc, char *argv[])
 {
     Connection *conn;
+    Session session;
     TelnetListener *listener;
     int port = 23;
     
@@ -53,11 +54,17 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    Connected(conn);
-    if (conn->connectionStatus == AUTHENTICATED)
+    InitSession(&session);
+    session.conn = conn;
+    Connected(&session);
+
+    /** Event Loop */
+    while (session.conn->connectionStatus != DISCONNECTED)
     {
-        NeoFetch(conn);
+        /** TODO: Implement event loop */
     }
+
+    DestroyConnection(conn);
 
     DestroyTelnetListener(listener);
 

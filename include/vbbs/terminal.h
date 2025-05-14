@@ -149,6 +149,5 @@ typedef struct
 
 void InitTerminal(Terminal *terminal);
 void NegotiateTerminal(FILE *in, FILE *out, Terminal *terminal);
-int StripANSI(const char *str, FILE *output);
 
 #endif

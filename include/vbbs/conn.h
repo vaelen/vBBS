@@ -29,6 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/types.h>
 
 #include <stdio.h>
+#include <vbbs/rb.h>
 #include <vbbs/user.h>
 #include <vbbs/terminal.h>
 
@@ -58,8 +59,11 @@ typedef struct
     FILE *inputStream;
     FILE *outputStream;
     void *data;
-    User user;
     Terminal terminal;
+    RingBuffer *inputBuffer;
+    RingBuffer *outputBuffer;
+    bool inEscape;
+    bool inCSI;
 } Connection;
 
 /* typedef void (*DisconnectFunction)(Connection *conn);*/
@@ -67,7 +71,9 @@ typedef struct
 void InitConnection(Connection *conn);
 bool AuthenticateConnection(Connection *conn, const char *username, 
     const char *password);
-int WriteToConnection(Connection *conn, const char *format, ...);
+void WriteToConnection(Connection *conn, const char *format, ...);
+int WriteBufferToConnection(Connection *conn);
 void Disconnect(Connection *conn);
+void DestroyConnection(Connection *conn);
 
 #endif

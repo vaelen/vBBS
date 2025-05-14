@@ -28,12 +28,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <stdlib.h>
+#include <vbbs/rb.h>
 #include <vbbs/log.h>
 #include <vbbs/conn.h>
 #include <vbbs/conn/console.h>
 #include <vbbs/conn/serial.h>
 #include <vbbs/conn/modem.h>
 #include <vbbs/conn/telnet.h>
+
+#define CONNECTION_BUFFER_SIZE 1024
 
 void InitConnection(Connection *conn)
 {
@@ -45,66 +49,50 @@ void InitConnection(Connection *conn)
     strcpy(conn->address, "Unknown");
     conn->inputStream = stdin;
     conn->outputStream = stdout;
-    InitUser(&conn->user);
+    conn->data = NULL;
     InitTerminal(&conn->terminal);
+    conn->inputBuffer = NewRingBuffer(CONNECTION_BUFFER_SIZE);
+    conn->outputBuffer = NewRingBuffer(CONNECTION_BUFFER_SIZE);
+    if (conn->inputBuffer == NULL || conn->outputBuffer == NULL)
+    {
+        Error("Failed to create input/output buffers for connection.\n");
+        exit(EXIT_FAILURE);
+    }
+    conn->inEscape = FALSE;
+    conn->inCSI = FALSE;
 }
 
-int _WriteToConnection(Connection *conn, const char *format, va_list args)
+void DestroyConnection(Connection *conn)
 {
-    int bytesWritten;
+    switch(conn->connectionType)
+    {
+        case TELNET:
+            DestroyTelnetConnection(conn);
+            break;
+        case CONSOLE:
+        case SERIAL:
+        case MODEM:
+        default:
+            free(conn);
+            break;
+    }
+}
+
+void WriteToConnection(Connection *conn, const char *format, ...)
+{
+    va_list args;
     char message[1024];
 
     if (conn->connectionStatus == DISCONNECTED)
     {
-        return EOF;
-    }
-    
-    /* TODO: Using vsnprintf would prevent possible buffer overflow here. */
-    /* 
-    vsnprintf(message, sizeof(message), format, args);
-    */
-    vsprintf(message, format, args);
-
-    if (conn->terminal.isANSI)
-    {
-        bytesWritten = fputs(message, conn->outputStream);
-    }
-    else
-    {
-        bytesWritten = StripANSI(message, conn->outputStream);
-    }
-    fflush(conn->outputStream);
-    
-    return bytesWritten;
-}
-
-int WriteToConnection(Connection *conn, const char *format, ...)
-{
-    int bytesWritten = 0;
-    va_list args;
-
-    if (conn->connectionStatus == DISCONNECTED)
-    {
-        return EOF;
+        return;
     }
     
     va_start(args, format);
-    _WriteToConnection(conn, format, args);
+    vsnprintf(message, sizeof(message), format, args);
+    WriteStringToRingBuffer(conn->outputBuffer, message);
     va_end(args);
-
-    return bytesWritten;
-}
-
-
-bool AuthenticateConnection(Connection *conn, const char *username, 
-    const char *password)
-{
-    if (!AuthenticateUser(&conn->user, username, password))
-    {
-        return FALSE;
-    }   
-    conn->connectionStatus = AUTHENTICATED;
-    return TRUE;
+    WriteBufferToConnection(conn);
 }
 
 void Disconnect(Connection *conn)
@@ -131,11 +119,108 @@ void Disconnect(Connection *conn)
             DisconnectModem(conn);
             break;
         case TELNET:
-            DestroyTelnetConnection(conn);
+            DisconnectTelnetConnection(conn);
             break;
         default:
             Warning("Unknown connection type: %d.\n", conn->connectionType);
             break;
     }
     conn->connectionStatus = DISCONNECTED;
+
+    if (conn->inputBuffer != NULL)
+    {
+        DestroyRingBuffer(conn->inputBuffer);
+        conn->inputBuffer = NULL;
+    }
+    if (conn->outputBuffer != NULL)
+    {
+        DestroyRingBuffer(conn->outputBuffer);
+        conn->outputBuffer = NULL;
+    }
+}
+
+/** 
+ * This is a non-blocking function that writes the contents of the output 
+ * buffer to the output stream. It returns the number of bytes written.
+ * It will also remove ANSI escape codes if the terminal does not support ANSI.
+ */
+int WriteBufferToConnection(Connection *conn)
+{
+    int bytesWritten = 0, n = 0;
+    char c;
+
+    if (conn == NULL || conn->outputBuffer == NULL || 
+        IsRingBufferEmpty(conn->outputBuffer))
+    {
+        return 0;
+    }
+
+    do
+    {
+        c = PeekRingBuffer(conn->outputBuffer);
+
+        /** Output a character, removing escape codes if needed. */
+        if (conn->terminal.isANSI)
+        {
+            n = fputc(c, conn->outputStream);
+            if (n == EOF)
+            {
+                /* Can't write anymore, return. */
+                break;
+            }
+            bytesWritten++;
+        }
+        else
+        {
+            /* If the terminal does not support ANSI, we need to strip the 
+             * escape codes. */
+
+            if (conn->inEscape)
+            {
+                if (conn->inCSI)
+                {
+                    if ((c >= 'A' && c <= 'Z') || 
+                    (c >= 'a' && c <= 'z'))
+                    {
+                        /* end of CSI */
+                        conn->inCSI = FALSE;
+                        conn->inEscape = FALSE;
+                    }
+                    /* skip all characters in the CSI */
+                }
+                else if (c == ANSI_CSI_CHAR)
+                {
+                    /** start of CSI */
+                    conn->inCSI = TRUE;
+                }
+                else {
+                    /* single character escape */
+                    conn->inEscape = FALSE;
+                }
+            }
+            else if (c == ANSI_ESCAPE_CHAR)
+            {
+                /** start of escape */
+                conn->inEscape = TRUE;
+            }
+            else
+            {
+                n = fputc(c, conn->outputStream);
+                if (n == EOF)
+                {
+                    /* Can't write anymore, return. */
+                    break;
+                }
+                bytesWritten++;
+            }
+
+        } /* end ANSI support check */
+
+        /** Remove the character we wrote earlier. */
+        PopRingBuffer(conn->outputBuffer);
+    } while (n > 0);
+ 
+    fflush(conn->outputStream);
+
+    return bytesWritten;
 }

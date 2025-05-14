@@ -42,3 +42,27 @@ void DisconnectConsole(Connection *conn)
         fclose(conn->outputStream);
     }
 }
+
+bool isConsoleReadyToRead(Connection *conn)
+{
+    if (conn == NULL)
+    {
+        return FALSE;
+    }
+
+    // Implement console readiness check here
+    // This is a placeholder implementation
+    return TRUE;
+}
+
+bool isConsoleReadyToWrite(Connection *conn)
+{
+    if (conn == NULL)
+    {
+        return FALSE;
+    }
+
+    // Implement console readiness check here
+    // This is a placeholder implementation
+    return TRUE;
+}
