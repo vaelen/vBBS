@@ -34,9 +34,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/terminal.h>
 #include <vbbs/conn.h>
 
+typedef struct Session Session;
 
-void Connected(Connection *conn);
-bool Login(Connection *conn);
-void NeoFetch(Connection *conn);
+typedef void (*EventHandler)(Session *session);
+
+struct Session {
+   Connection *conn;
+   User user;
+   EventHandler eventHandler;
+   bool characterInputMode;
+   char nextCharacter;
+   char nextLine[256];
+   uint8_t loginAttempts;
+};
+
+void InitSession(Session *session);
+void Connected(Session *session);
 
 #endif

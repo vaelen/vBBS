@@ -42,3 +42,27 @@ void DisconnectSerial(Connection *conn)
         fclose(conn->outputStream);
     }
 }
+
+bool isSerialReadyToRead(Connection *conn)
+{
+    if (conn == NULL)
+    {
+        return FALSE;
+    }
+
+    // Implement serial port readiness check here
+    // This is a placeholder implementation
+    return TRUE;
+}
+
+bool isSerialReadyToWrite(Connection *conn)
+{
+    if (conn == NULL)
+    {
+        return FALSE;
+    }
+
+    // Implement serial port readiness check here
+    // This is a placeholder implementation
+    return TRUE;
+}

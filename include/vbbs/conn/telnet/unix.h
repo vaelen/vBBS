@@ -1,3 +1,6 @@
+#ifndef VBBS_CONN_TELNET_UNIX_H
+#define VBBS_CONN_TELNET_UNIX_H
+
 /*
 Copyright (c) 2025, Andrew Young
 
@@ -26,50 +29,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/types.h>
 
 #include <stdio.h>
-#include <vbbs/log.h>
-#include <vbbs/conn.h>
-#include <vbbs/conn/telnet.h>
-
-/***** UNIX Implementation Using Berkeley Sockets *****/
+#include <vbbs/user.h>
+#include <vbbs/terminal.h>
 
 #ifdef __unix__
+#include <arpa/inet.h>
 
-#include "telnet/unix.c"
-
-#else
-/***** Default Null Implementation *****/
-
-TelnetListener* NewTelnetListener(int port)
+typedef struct
 {
-    Warn("TelnetListener: Not implemented on this platform.");
-    return NULL;
-}
+   int port;
+   int socket;
+   struct sockaddr_in serverAddress;
+} TelnetListener;
 
-Connection* TelnetListenerAccept(TelnetListener *listener)
-{
-    Warn("TelnetListenerAccept: Not implemented on this platform.");
-    return NULL;
-}
-
-void CloseTelnetListener(TelnetListener *listener) 
-{
-    Warn("CloseTelnetListener: Not implemented on this platform.");
-}
-
-void DisconnectTelnet(Connection *conn)
-{
-    Warn("DisconnectTelnet: Not implemented on this platform.");
-}
-
-void DestroyTelnetConnection(Connection *conn)
-{
-    if (conn == NULL)
-    {
-        return;
-    }
-    DisconnectTelnetConnection(conn);
-    free(conn);
-}
-
+#endif /* __unix__ */
 #endif
-

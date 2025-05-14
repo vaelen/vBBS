@@ -42,3 +42,27 @@ void DisconnectModem(Connection *conn)
         fclose(conn->outputStream);
     }
 }
+
+bool isModemReadyToRead(Connection *conn)
+{
+    if (conn == NULL)
+    {
+        return FALSE;
+    }
+
+    // Implement modem readiness check here
+    // This is a placeholder implementation
+    return TRUE;
+}
+
+bool isModemReadyToWrite(Connection *conn)
+{
+    if (conn == NULL)
+    {
+        return FALSE;
+    }
+
+    // Implement modem readiness check here
+    // This is a placeholder implementation
+    return TRUE;
+}

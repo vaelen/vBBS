@@ -26,6 +26,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/types.h>
 #include <vbbs/rb.h>
 #include <stdlib.h>
+#include <string.h>
 
 RingBuffer* NewRingBuffer(size_t size)
 {
@@ -108,6 +109,16 @@ void PushRingBuffer(RingBuffer *rb, uint8_t byte)
     }
 }
 
+/** Look at the next value in the buffer without removing it. */
+uint8_t PeekRingBuffer(RingBuffer *rb)
+{
+    if (rb->size > 0)
+    {
+        return rb->buffer[rb->tail];
+    }
+    return 0;
+}
+
 /** Pop a value off of the front of the buffer. */
 uint8_t PopRingBuffer(RingBuffer *rb)
 {
@@ -119,4 +130,11 @@ uint8_t PopRingBuffer(RingBuffer *rb)
         rb->size--;
     }
     return byte;
+}
+
+/** Write a null terminated string to the end of the buffer. */
+void WriteStringToRingBuffer(RingBuffer *rb, const char *str)
+{
+    size_t len = strlen(str);
+    WriteRingBuffer(rb, (const uint8_t *)str, len);
 }

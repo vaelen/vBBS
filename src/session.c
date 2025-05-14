@@ -23,119 +23,155 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <vbbs/types.h>
+
+#include <stdio.h>
+#include <string.h>
 #include <vbbs/session.h>
+#include <vbbs/log.h>
+#include <vbbs/conn.h>
+#include <vbbs/user.h>
+#include <vbbs/terminal.h>
 
-#define MAX_TRIES 3
+#define MAX_LOGIN_ATTEMPTS 3
 
-bool Login(Connection *conn)
+/** Input handlers */
+static void PromptUserName(Session *session);
+static void PromptPassword(Session *session);
+static void CheckPassword(Session *session);
+static void LoggedIn(Session *session);
+
+void InitSession(Session *session)
 {
-    char username[51];
-    char password[51];
-    int i;
+    session->conn = NULL;
+    InitUser(&session->user);
+    session->eventHandler = NULL;
+    session->characterInputMode = FALSE;
+    session->nextCharacter = 0;
+    session->nextLine[0] = '\0';
+    session->loginAttempts = 0;
+}
+
+static bool isNextLineReady(Session *session)
+{
+    return session->nextLine[0] != '\0';
+}
+
+void Connected(Session *session)
+{
+    Connection *conn;
+    
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    conn = session->conn;
+
+    session->loginAttempts = 0;
+    conn->connectionStatus = CONNECTED;
+    WriteToConnection(conn, "Connected to vBBS.\n");
+    PromptUserName(session);
+}
+
+static void PromptUserName(Session *session)
+{
+    Connection *conn;
+    
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    conn = session->conn;
 
     WriteToConnection(conn, RESET_MODES);
     WriteToConnection(conn, "Login => ");
-    i = fscanf(conn->inputStream, "%50s", username);
-    if (i == EOF)
-    {
-        Info("[%d] Connection closed while reading username.", 
-            conn->connectionID);
-        return FALSE;
-    }
-    else if (i == 0)
-    {
-        WriteToConnection(conn, "Invalid username.\n");
-        Info("[%d] Invalid username: %s", conn->connectionID, username);
-        return FALSE;
-    }
-
-    WriteToConnection(conn, "Password => ");
-    WriteToConnection(conn, SET_CONSEAL);
-    fflush(conn->outputStream);
-    i = fscanf(conn->inputStream, "%50s", password);
-    WriteToConnection(conn, SET_CONSEAL_OFF);
-    fflush(conn->outputStream);
-    if (i == EOF)
-    {
-        Info("[%d] Connection closed while reading password.", 
-            conn->connectionID);
-        return FALSE;
-    }
-    else if (i == 0)
-    {
-        WriteToConnection(conn, "Invalid username.\n");
-        Info("[%d] Invalid password: %s", conn->connectionID, username);
-        return FALSE;
-    }
-
-    if (!AuthenticateConnection(conn, username, password))
-    {
-        Info("[%d] Authentication failure for user %s.", 
-            conn->connectionID, username);
-        WriteToConnection(conn, "Authentication failed.\n");
-        return FALSE;
-    }
-
-    Info("[%d] User %s logged in successfully.", 
-        conn->connectionID, conn->user.username);
-    return TRUE;
+    session->eventHandler = PromptPassword;
 }
 
-void Connected(Connection *conn)
+static void PromptPassword(Session *session)
 {
-    bool b = FALSE;
-    int tries = 0;
-
-    conn->connectionStatus = CONNECTED;
-    WriteToConnection(conn, "Connected to vBBS.\n");
-    NegotiateTerminal(conn->inputStream, conn->outputStream, &conn->terminal);
-    while(tries < MAX_TRIES)
+    Connection *conn;
+    int maxLength;
+    
+    if (session == NULL || session->conn == NULL)
     {
-        b = Login(conn);
-        if (b)
-        {
-            conn->connectionStatus = AUTHENTICATED;
-            WriteToConnection(conn, "Welcome, %s!\n", conn->user.username);
-            break;
-        }
-        tries++;
-        if (tries == MAX_TRIES)
-        {
-            WriteToConnection(conn, "Too many failed attempts. Disconnecting...\n");
-            Info("[%d] Too many failed attempts. Disconnecting...", conn->connectionID);
-            Disconnect(conn);
-            return;
-        }
-    }
-}
-
-void NeoFetch(Connection *conn)
-{
-    char buffer[256];
-#ifdef _POSIX_VERSION
-    FILE *pipe;
-
-    pipe = popen("neofetch", "r");
-    if (pipe == NULL)
-    {
-        WriteToConnection(conn, "Failed to fetch system information.\n");
         return;
     }
+    conn = session->conn;
 
-    while (fgets(buffer, sizeof(buffer), pipe) != NULL)
+    maxLength = sizeof(session->user.username) - 1;
+
+    if (isNextLineReady(session))
     {
-        WriteToConnection(conn, "%s", buffer);
+        strncpy(session->user.username, session->nextLine, maxLength);
+        session->user.username[maxLength] = '\0';
+        session->nextLine[0] = '\0';
+        WriteToConnection(conn, SET_CONSEAL_OFF);
+        WriteToConnection(conn, "Password => ");
+        WriteToConnection(conn, SET_CONSEAL);
+        session->eventHandler = CheckPassword;
     }
-    pclose(pipe);
-    WriteToConnection(conn, "\n");
-    WriteToConnection(conn, "Press Enter to continue...\n");
-    fgets(buffer, sizeof(buffer), conn->inputStream);
-    WriteToConnection(conn, "\n");
-#else
-    WriteToConnection(conn, "NeoFetch is not supported on this platform.\n");
-    WriteToConnection(conn, "Press Enter to continue...\n");
-    fgets(buffer, sizeof(buffer), conn->inputStream);
-    WriteToConnection(conn, "\n");
-#endif
 }
 
+static void CheckPassword(Session *session)
+{
+    Connection *conn;
+    User user;
+    
+    InitUser(&user);
+
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    conn = session->conn;
+
+    if (isNextLineReady(session))
+    {
+
+        InitUser(&user);
+        /** TODO: Look up user by username in user database. */
+
+        if (!AuthenticateUser(&user, session->user.username, session->nextLine))
+        {
+            Info("[%d] Authentication failure for user %s.", 
+                conn->connectionID, session->user.username);
+            WriteToConnection(conn, "Authentication failed.\n");
+            session->nextLine[0] = '\0';
+            session->loginAttempts++;
+            if (session->loginAttempts >= MAX_LOGIN_ATTEMPTS)
+            {
+                WriteToConnection(conn, 
+                    "Too many failed attempts. Disconnecting...\n");
+                Info("[%d] Too many failed attempts. Disconnecting...", 
+                    conn->connectionID);
+                Disconnect(conn);
+            }
+            else
+            {
+                session->eventHandler = PromptUserName;
+            }
+        }
+        else
+        {
+            conn->connectionStatus = AUTHENTICATED;
+            Info("[%d] User %s logged in successfully.", 
+                conn->connectionID, session->user.username);
+            session->nextLine[0] = '\0';
+            LoggedIn(session);
+        }
+    }
+}
+
+void LoggedIn(Session *session)
+{
+    Connection *conn;
+
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    conn = session->conn;
+
+    Disconnect(conn);
+}

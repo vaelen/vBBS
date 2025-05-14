@@ -48,7 +48,9 @@ void ReadRingBuffer(RingBuffer *rb, uint8_t *data, size_t size);
 void ClearRingBuffer(RingBuffer *rb);
 bool IsRingBufferEmpty(RingBuffer *rb);
 bool IsRingBufferFull(RingBuffer *rb);
+uint8_t PeekRingBuffer(RingBuffer *rb);
 void PushRingBuffer(RingBuffer *rb, uint8_t byte);
 uint8_t PopRingBuffer(RingBuffer *rb);
+void WriteStringToRingBuffer(RingBuffer *rb, const char *str);
 
 #endif

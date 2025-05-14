@@ -36,7 +36,7 @@ bin/tests/rb: obj/tests/rb.o obj/rb.o bin
 obj/%.o : src/%.c include/vbbs/%.h obj
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-obj/conn/%.o : src/conn/%.c include/vbbs/conn/%.h obj
+obj/conn/%.o : src/conn/%.c src/conn/%/*.c include/vbbs/conn/%.h obj
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 obj/bin/%.o : src/bin/%.c obj
