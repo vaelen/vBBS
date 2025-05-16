@@ -25,6 +25,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <vbbs/types.h>
 #include <vbbs/buffer.h>
+#include <vbbs/log.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -165,6 +166,24 @@ void DestroyInputBuffer(InputBuffer *buffer)
     free(buffer);
 }
 
+int ReadDataFromStream(InputBuffer *buffer, FILE *in)
+{
+    int bytesRead = 0;
+    int bytesToRead = BufferRemaining(buffer->buffer);
+    if (bytesToRead <= 0)
+    {
+        return 0; // Buffer is full
+    }
+
+    bytesRead = fread(buffer->buffer->tail, 1, bytesToRead, in);
+    if (bytesRead > 0)
+    {
+        buffer->buffer->length += bytesRead;
+        buffer->buffer->tail += bytesRead;
+    }
+    return bytesRead;
+}
+
 bool IsNextLineReady(InputBuffer *buffer)
 {
     int i;
@@ -182,6 +201,20 @@ bool IsNextLineReady(InputBuffer *buffer)
             /* Found a newline, copy the line to nextLine. */
             strncpy(buffer->nextLine, (char *)buffer->buffer->bytes, i);
             buffer->nextLine[i] = '\0';
+
+            /* Check for a carriage return before the line feed */
+            if (buffer->nextLine[i - 1] == '\r')
+            {
+                buffer->nextLine[i - 1] = '\0';
+            }
+
+            // Check for a carriage return after the line feed */
+            if (buffer->buffer->bytes[i + 1] == '\r')
+            {
+                /* This causes the memmove to remove the carriage return*/
+                i++;
+            }
+
             /* Remove the line from the buffer. */
             memmove(buffer->buffer->bytes, buffer->buffer->bytes + i + 1,
                 buffer->buffer->length - i - 1);
@@ -196,4 +229,17 @@ bool IsNextLineReady(InputBuffer *buffer)
 void ClearNextLine(InputBuffer *buffer)
 {
     memset(buffer->nextLine, 0, sizeof(buffer->nextLine));
+}
+
+void BytesToHexString(char *bytes, int bytesSize, char *out, int outSize)
+{
+    int i;
+    int offset = 0;
+
+    for (i = 0; i < bytesSize && offset < outSize - 1; i++)
+    {
+        offset += snprintf(out + offset, outSize - offset, "%02X ", 
+            bytes[i]);
+    }
+    out[offset] = '\0';
 }

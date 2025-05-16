@@ -85,7 +85,7 @@ TelnetListener* NewTelnetListener(int port)
         return NULL;
     }
 
-    printf("Telnet: Server listening on port %d\n", port);
+    Info("Telnet: Server listening on port %d", port);
 
     listener = (TelnetListener *)malloc(sizeof(TelnetListener));
     listener->socket = sockfd;
@@ -110,7 +110,7 @@ Connection* TelnetListenerAccept(TelnetListener *listener)
         return NULL;
     }
 
-    Info("Telnet: New connection from %s:%d\n", 
+    Info("Telnet: New connection from %s:%d", 
         inet_ntoa(remoteAddress.sin_addr), 
         ntohs(remoteAddress.sin_port));
     
@@ -136,9 +136,7 @@ Connection* TelnetListenerAccept(TelnetListener *listener)
     conn->connectionStatus = CONNECTED;
     conn->data = telnetData;
     /* enable non-blocking I/O */
-    /*
     fcntl(sockfd, F_SETFL, O_NONBLOCK); 
-    */
     conn->inputStream = fdopen(sockfd, "r");
     conn->outputStream = fdopen(sockfd, "w");
     if (conn->inputStream == NULL || conn->outputStream == NULL)
@@ -158,7 +156,7 @@ Connection* TelnetListenerAccept(TelnetListener *listener)
 void DestroyTelnetListener(TelnetListener *listener) 
 {
     close(listener->socket);
-    Info("Telnet: Listener closed on port %d\n", listener->port);
+    Info("Telnet: Listener closed on port %d", listener->port);
     free(listener);
 }
 
@@ -185,7 +183,7 @@ void DisconnectTelnetConnection(Connection *conn)
     {
         TelnetConnectionData *telnetData = (TelnetConnectionData *)conn->data;
         close(telnetData->socket);
-        Info("Telnet: Connection closed from %s:%d\n", 
+        Info("Telnet: Connection closed from %s:%d", 
             inet_ntoa(telnetData->remoteAddress.sin_addr), 
             ntohs(telnetData->remoteAddress.sin_port));
         free(telnetData);

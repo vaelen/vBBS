@@ -103,7 +103,6 @@ void WriteToConnection(Connection *conn, const char *format, ...)
     vsnprintf(message, sizeof(message), format, args);
     WriteStringToBuffer(conn->outputBuffer, message);
     va_end(args);
-    WriteBufferToConnection(conn);
 }
 
 void Disconnect(Connection *conn)
@@ -157,6 +156,7 @@ int WriteBufferToConnection(Connection *conn)
 
     do
     {
+        n = 0;
         if (conn->terminal.isANSI)
         {
             /* Since the terminal supports ANSI, just write the whole
@@ -167,8 +167,6 @@ int WriteBufferToConnection(Connection *conn)
                 /* Can't write anymore, return. */
                 break;
             }
-            ShiftBuffer(conn->outputBuffer, n);
-            bytesWritten += n;
         }
         else
         {
@@ -214,11 +212,13 @@ int WriteBufferToConnection(Connection *conn)
                         /* Can't write anymore, return. */
                         break;
                     }
-                    bytesWritten++;
+                    n++;
                 }
             } 
 
         } /* end ANSI support check */
+        ShiftBuffer(conn->outputBuffer, n);
+        bytesWritten += n;
     } while (n > 0);
  
     fflush(conn->outputStream);

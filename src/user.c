@@ -47,6 +47,8 @@ bool AuthenticateUser(User *user, const char *username, const char *password)
     uint8_t hash[20];
     char hashString[41];
 
+    Debug("Authenticating user: '%s'", username);
+
     if (user == NULL || username == NULL || password == NULL)
     {
         return FALSE;
