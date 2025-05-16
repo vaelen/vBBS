@@ -107,11 +107,6 @@ void AcceptTelnetConnection(TelnetListener *listener, ArrayList *sessions)
 
         AddToArrayList(sessions, session);
 
-        Info("[%d] New connection from %s:%d", 
-            session->sessionID,
-            TelnetRemoteAddress(conn),
-            TelnetRemotePort(conn));
-
         session->eventHandler = Connected;
         Connected(session);
     }
@@ -157,16 +152,12 @@ void ReadFromSession(Session *session)
 
 void WriteToSession(Session *session)
 {
-    int bytesWritten;
-
     if (session == NULL || session->conn == NULL)
     {
         return;
     }
 
-    bytesWritten = WriteBufferToConnection(session->conn);
-    Info("[%d] Bytes written: %d", session->sessionID, 
-        bytesWritten);
+    WriteBufferToConnection(session->conn);
     if(feof(session->conn->outputStream))
     {
         Debug("End of file reached on input stream.");
