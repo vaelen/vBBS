@@ -41,12 +41,42 @@ static void PromptPassword(Session *session);
 static void CheckPassword(Session *session);
 static void LoggedIn(Session *session);
 
-void InitSession(Session *session)
+
+Session* NewSession(Connection *conn)
 {
-    session->conn = NULL;
+    Session *session = (Session *)malloc(sizeof(Session));
+    if (session == NULL)
+    {
+        Error("Failed to allocate memory for session.");
+        return NULL;
+    }
+    session->conn = conn;
     InitUser(&session->user);
     session->eventHandler = NULL;
     session->loginAttempts = 0;
+    return session;
+}
+
+void DestroySession(Session *session)
+{
+    if (session == NULL)
+    {
+        return;
+    }
+
+    if (session->eventHandler != NULL)
+    {
+        session->eventHandler = NULL;
+    }
+
+    if (session->conn != NULL)
+    {
+        Disconnect(session->conn);
+        DestroyConnection(session->conn);
+        session->conn = NULL;
+    }
+
+    free(session);
 }
 
 void Connected(Session *session)

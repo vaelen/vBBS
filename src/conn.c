@@ -37,8 +37,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/conn/modem.h>
 #include <vbbs/conn/telnet.h>
 
-#define CONNECTION_BUFFER_SIZE 1024
-
 void InitConnection(Connection *conn)
 {
     conn->connectionID = 0;

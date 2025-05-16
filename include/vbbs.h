@@ -27,20 +27,27 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <vbbs/types.h>
+#include <vbbs/globals.h>
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h> 
 
-#include <vbbs/log.h>
-#include <vbbs/terminal.h>
+#include <vbbs/buffer.h>
 #include <vbbs/conn.h>
-#include <vbbs/user.h>
+#include <vbbs/crc.h>
+#include <vbbs/db.h>
+#include <vbbs/list.h>
+#include <vbbs/log.h>
+#include <vbbs/rb.h>
 #include <vbbs/session.h>
+#include <vbbs/sha1.h>
+#include <vbbs/terminal.h>
+#include <vbbs/user.h>
 
 #include <vbbs/conn/console.h>
-#include <vbbs/conn/serial.h>
 #include <vbbs/conn/modem.h>
+#include <vbbs/conn/serial.h>
 #include <vbbs/conn/telnet.h>
 
 #endif /* VBBS_H */

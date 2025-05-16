@@ -45,7 +45,8 @@ struct Session {
    uint8_t loginAttempts;
 };
 
-void InitSession(Session *session);
+Session* NewSession(Connection *conn);
+void DestroySession(Session *session);
 void Connected(Session *session);
 
 #endif
