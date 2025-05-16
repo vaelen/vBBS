@@ -43,6 +43,8 @@ typedef enum
 void InitLog(const char *filename);
 void CloseLog(void);
 
+void SetLogLevel(LogLevel level);
+
 void LogMessage(LogLevel level, const char *format, ...);
 
 void Debug(const char* format, ...);

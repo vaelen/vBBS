@@ -38,6 +38,7 @@ const char *LEVELS[] = {
 };
 
 FILE *LOG = NULL;
+LogLevel LOG_LEVEL = LOG_DEBUG;
 
 /**
  * Initialize the log file. 
@@ -71,15 +72,22 @@ void CloseLog(void)
     }
 }
 
+void SetLogLevel(LogLevel level)
+{
+    LOG_LEVEL = level;
+    Info("Log level set to: %s", LEVELS[level]);
+}
+
 /** 
  * Helper method called by other methods. 
  */
 void _LogMessage(FILE *stream, LogLevel level, const char *format, va_list args)
 {
-    if (stream == NULL)
+    if (stream == NULL || level < LOG_LEVEL)
     {
         return;
     }
+
     fprintf(stream, "[%s] ", LEVELS[level]);
     vfprintf(stream, format, args);
     fprintf(stream, "\n");

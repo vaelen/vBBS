@@ -33,6 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/user.h>
 #include <vbbs/terminal.h>
 
+#include <vbbs/conn/telnet.h>
+#include <vbbs/conn/console.h>
+#include <vbbs/conn/serial.h>
+#include <vbbs/conn/modem.h>
+
 #define MAX_LOGIN_ATTEMPTS 3
 
 static uint32_t sessionIDCounter = 0;
@@ -56,6 +61,39 @@ Session* NewSession(Connection *conn)
     InitUser(&session->user);
     session->eventHandler = NULL;
     session->loginAttempts = 0;
+
+    if (conn != NULL)
+    {
+        switch(conn->connectionType)
+        {
+            case CONSOLE:
+                session->eventHandler = PromptUserName;
+                Info("[%d] New console connection", 
+                    session->sessionID);
+                break;
+            case SERIAL:
+                session->eventHandler = PromptUserName;
+                Info("[%d] New serial connection from %s at %dbps", 
+                    session->sessionID,
+                    conn->location,
+                    conn->connectionSpeed);
+                break;
+            case MODEM:
+                session->eventHandler = PromptUserName;
+                Info("[%d] New modem connection from %s at %dbps", 
+                    session->sessionID,
+                    conn->location,
+                    conn->connectionSpeed);
+                break;
+            case TELNET:
+                Info("[%d] New telnet connection from %s:%d", 
+                    session->sessionID,
+                    TelnetRemoteAddress(session->conn),
+                    TelnetRemotePort(session->conn));
+                break;
+        }
+    }
+
     return session;
 }
 
@@ -71,14 +109,38 @@ void DestroySession(Session *session)
         session->eventHandler = NULL;
     }
 
+    Info("[%d] Destroying session", session->sessionID);
+
     if (session->conn != NULL)
     {
+        switch(session->conn->connectionType)
+        {
+            case CONSOLE:
+                session->eventHandler = PromptUserName;
+                Info("[%d] Console connection closed", 
+                    session->sessionID);
+                break;
+            case SERIAL:
+                session->eventHandler = PromptUserName;
+                Info("[%d] Serial connection closed", 
+                    session->sessionID);
+                break;
+            case MODEM:
+                session->eventHandler = PromptUserName;
+                Info("[%d] Modem connection closed", 
+                    session->sessionID);
+                break;
+            case TELNET:
+                Info("[%d] Telnet connection from %s:%d closed", 
+                    session->sessionID,
+                    TelnetRemoteAddress(session->conn),
+                    TelnetRemotePort(session->conn));
+                break;
+        }
         Disconnect(session->conn);
         DestroyConnection(session->conn);
         session->conn = NULL;
     }
-
-    Info("Destroying session #%d.", session->sessionID);
 
     free(session);
 }

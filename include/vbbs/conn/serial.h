@@ -27,10 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <vbbs/types.h>
-
-#include <stdio.h>
-#include <vbbs/user.h>
-#include <vbbs/terminal.h>
+#include <vbbs/conn.h>
 
 void DisconnectSerial(Connection *conn);
 

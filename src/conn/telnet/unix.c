@@ -113,7 +113,7 @@ Connection* TelnetListenerAccept(TelnetListener *listener)
         return NULL;
     }
 
-    Info("Telnet: New connection from %s:%d", 
+    Debug("Telnet: New connection from %s:%d", 
         inet_ntoa(remoteAddress.sin_addr), 
         ntohs(remoteAddress.sin_port));
     
@@ -192,10 +192,10 @@ void DisconnectTelnetConnection(Connection *conn)
     {
         TelnetConnectionData *telnetData = (TelnetConnectionData *)conn->data;
         close(telnetData->socket);
-        Info("Telnet: Connection closed from %s:%d", 
+        Debug("Telnet: Connection closed from %s:%d", 
             inet_ntoa(telnetData->remoteAddress.sin_addr), 
             ntohs(telnetData->remoteAddress.sin_port));
-        free(telnetData);
+        free(conn->data);
         conn->data = NULL;
     }
 
@@ -208,10 +208,6 @@ void DestroyTelnetConnection(Connection *conn)
         return;
     }
     DisconnectTelnetConnection(conn);
-    if (conn->data != NULL)
-    {
-        free(conn->data);
-    }   
 }
 
 const char* TelnetRemoteAddress(Connection *conn)
