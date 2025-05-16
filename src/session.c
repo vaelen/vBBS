@@ -62,15 +62,17 @@ void Connected(Session *session)
     session->loginAttempts = 0;
     conn->connectionStatus = CONNECTED;
     WriteToConnection(conn, "Connected to vBBS.\n");
+    session->eventHandler = PromptUserName;
     PromptUserName(session);
 }
 
-static void PromptUserName(Session *session)
+void PromptUserName(Session *session)
 {
     Connection *conn;
     
     if (session == NULL || session->conn == NULL)
     {
+        Error("Session is NULL or connection is NULL.");
         return;
     }
     conn = session->conn;
@@ -80,7 +82,7 @@ static void PromptUserName(Session *session)
     session->eventHandler = PromptPassword;
 }
 
-static void PromptPassword(Session *session)
+void PromptPassword(Session *session)
 {
     Connection *conn;
     int maxLength;
@@ -105,7 +107,7 @@ static void PromptPassword(Session *session)
     }
 }
 
-static void CheckPassword(Session *session)
+void CheckPassword(Session *session)
 {
     Connection *conn;
     User user;
@@ -142,7 +144,7 @@ static void CheckPassword(Session *session)
             }
             else
             {
-                session->eventHandler = PromptUserName;
+                PromptUserName(session);
             }
         }
         else

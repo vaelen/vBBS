@@ -49,6 +49,7 @@ int WriteToBuffer(Buffer *buffer, const char *data, int length);
 int WriteStringToBuffer(Buffer *buffer, const char *data);
 int WriteBufferToStream(Buffer *buffer, FILE *out);
 int ReadFromBuffer(Buffer *buffer, uint8_t *data, int length);
+void BytesToHexString(char *bytes, int bytesSize, char *out, int outSize);
 /** 
  * ShiftBuffer shifts the contents of the buffer by the specified offset.
  * Another way to think of this is that it removes the first offset bytes.
@@ -75,6 +76,7 @@ typedef struct InputBuffer {
 
 InputBuffer* NewInputBuffer(size_t size);
 void DestroyInputBuffer(InputBuffer *buffer);
+int ReadDataFromStream(InputBuffer *buffer, FILE *in);
 bool IsNextLineReady(InputBuffer *buffer);
 void ClearNextLine(InputBuffer *buffer);
 
