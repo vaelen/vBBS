@@ -42,9 +42,6 @@ struct Session {
    Connection *conn;
    User user;
    EventHandler eventHandler;
-   bool characterInputMode;
-   char nextCharacter;
-   char nextLine[256];
    uint8_t loginAttempts;
 };
 

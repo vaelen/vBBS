@@ -61,15 +61,5 @@ void DisconnectTelnet(Connection *conn)
     Warn("DisconnectTelnet: Not implemented on this platform.");
 }
 
-void DestroyTelnetConnection(Connection *conn)
-{
-    if (conn == NULL)
-    {
-        return;
-    }
-    DisconnectTelnetConnection(conn);
-    free(conn);
-}
-
 #endif
 

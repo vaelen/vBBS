@@ -196,12 +196,17 @@ void DisconnectTelnetConnection(Connection *conn)
 
 void DestroyTelnetConnection(Connection *conn)
 {
-    if (conn == NULL)
+    if (conn == NULL || conn->connectionType != TELNET)
     {
         return;
     }
-    DisconnectTelnetConnection(conn);
-    free(conn);
+    if (conn->data != NULL)
+    {
+        TelnetConnectionData *telnetData = (TelnetConnectionData *)conn->data;
+        close(telnetData->socket);
+        free(telnetData);
+        conn->data = NULL;
+    }   
 }
 
 #endif /* __unix__ */

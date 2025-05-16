@@ -13,6 +13,7 @@ all: bin/vbbs
 test: $(TESTS)
 	./bin/tests/crc
 	./bin/tests/rb
+	./bin/tests/buffer
 	
 obj:
 	mkdir -p obj
@@ -32,6 +33,9 @@ bin/tests/crc: obj/tests/crc.o obj/crc.o bin
 
 bin/tests/rb: obj/tests/rb.o obj/rb.o bin
 	$(LD) -o bin/tests/rb obj/tests/rb.o obj/rb.o $(CFLAGS)
+
+bin/tests/buffer: obj/tests/buffer.o obj/buffer.o bin
+	$(LD) -o bin/tests/buffer obj/tests/buffer.o obj/buffer.o $(CFLAGS)
 
 obj/%.o : src/%.c include/vbbs/%.h obj
 	$(CC) -c $(CFLAGS) $(CPPFLAGS) $< -o $@
