@@ -85,6 +85,9 @@ TelnetListener* NewTelnetListener(int port)
         return NULL;
     }
 
+    /* Set socket to non-blocking mode */
+    fcntl(sockfd, F_SETFL, O_NONBLOCK); 
+
     Info("Telnet: Server listening on port %d", port);
 
     listener = (TelnetListener *)malloc(sizeof(TelnetListener));
@@ -198,12 +201,10 @@ void DestroyTelnetConnection(Connection *conn)
     {
         return;
     }
+    DisconnectTelnetConnection(conn);
     if (conn->data != NULL)
     {
-        TelnetConnectionData *telnetData = (TelnetConnectionData *)conn->data;
-        close(telnetData->socket);
-        free(telnetData);
-        conn->data = NULL;
+        free(conn->data);
     }   
 }
 

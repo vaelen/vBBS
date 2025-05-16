@@ -1,6 +1,5 @@
-#ifndef VBBS_TYPES_H
-#define VBBS_TYPES_H
-
+#ifndef _VBBS_LIST_H
+#define _VBBS_LIST_H
 /*
 Copyright (c) 2025, Andrew Young
 
@@ -26,62 +25,23 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#if defined(__STDC__)
-# define STANDARD_C_1989
-# if defined(__STDC_VERSION__)
-#  define STANDARD_C_1990
-#  if (__STDC_VERSION__ >= 199409L)
-#   define PSTANDARD_C_1994
-#  endif
-#  if (__STDC_VERSION__ >= 199901L)
-#   define STANDARD_C_1999
-#  endif
-#  if (__STDC_VERSION__ >= 201112L)
-#    define STANDARD_C_2011
-#  endif
-#  if (__STDC_VERSION__ >= 201710L)
-#   define STANDARD_C_2018
-#  endif
-# endif
-#endif
+#include <vbbs/types.h>
 
-#include <stddef.h>
-#include <limits.h>
+typedef void (*ListItemDestructor)(void *item);
 
-#ifdef __unix__
-#include <unistd.h>
-#endif
+typedef struct ArrayList
+{
+    void **items;
+    int size;
+    int capacity;
+    ListItemDestructor destructor;
+} ArrayList;
 
-#define MAX(a,b) ((a) > (b) ? (a) : (b))
-#define MIN(a,b) ((a) < (b) ? (a) : (b))
+ArrayList *NewArrayList(int initialCapacity, ListItemDestructor destructor);
+void DestroyArrayList(ArrayList *list);
+void AddToArrayList(ArrayList *list, void *item);
+void *GetFromArrayList(ArrayList *list, int index);
+void RemoveFromArrayList(ArrayList *list, int index);
+void ClearArrayList(ArrayList *list);
 
-enum {
-    FALSE = 0,
-    TRUE = 1
-};
-
-typedef unsigned char bool;
-
-#ifdef STANDARD_C_1999
-#include <stdint.h>
-#else
-
-typedef signed char int8_t;
-typedef unsigned char uint8_t;
-
-typedef signed short int16_t;
-typedef unsigned short uint16_t;
-
-#if __ULONG_MAX__ == 4294967295
-typedef signed long int int32_t;
-typedef unsigned long int uint32_t;
-#else
-typedef signed int int32_t;
-typedef unsigned int uint32_t;
-#endif /* 32bit long check */
-
-#endif /* STANDARD_C_1999 */
-
-#include <vbbs/globals.h>
-
-#endif
+#endif /* _VBBS_LIST_H */

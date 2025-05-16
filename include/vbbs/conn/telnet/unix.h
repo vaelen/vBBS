@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef __unix__
 #include <arpa/inet.h>
 
-typedef struct
+typedef struct TelnetListener
 {
    int port;
    int socket;
