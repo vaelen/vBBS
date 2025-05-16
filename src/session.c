@@ -46,15 +46,7 @@ void InitSession(Session *session)
     session->conn = NULL;
     InitUser(&session->user);
     session->eventHandler = NULL;
-    session->characterInputMode = FALSE;
-    session->nextCharacter = 0;
-    session->nextLine[0] = '\0';
     session->loginAttempts = 0;
-}
-
-static bool isNextLineReady(Session *session)
-{
-    return session->nextLine[0] != '\0';
 }
 
 void Connected(Session *session)
@@ -101,14 +93,14 @@ static void PromptPassword(Session *session)
 
     maxLength = sizeof(session->user.username) - 1;
 
-    if (isNextLineReady(session))
+    if (IsNextLineReady(conn->inputBuffer))
     {
-        strncpy(session->user.username, session->nextLine, maxLength);
+        strncpy(session->user.username, conn->inputBuffer->nextLine, maxLength);
         session->user.username[maxLength] = '\0';
-        session->nextLine[0] = '\0';
-        WriteToConnection(conn, SET_CONSEAL_OFF);
+        ClearNextLine(conn->inputBuffer);;
+        WriteToConnection(conn, SET_CONCEAL_OFF);
         WriteToConnection(conn, "Password => ");
-        WriteToConnection(conn, SET_CONSEAL);
+        WriteToConnection(conn, SET_CONCEAL);
         session->eventHandler = CheckPassword;
     }
 }
@@ -126,18 +118,19 @@ static void CheckPassword(Session *session)
     }
     conn = session->conn;
 
-    if (isNextLineReady(session))
+    if (IsNextLineReady(conn->inputBuffer))
     {
 
         InitUser(&user);
         /** TODO: Look up user by username in user database. */
 
-        if (!AuthenticateUser(&user, session->user.username, session->nextLine))
+        if (!AuthenticateUser(&user, session->user.username, 
+            conn->inputBuffer->nextLine))
         {
             Info("[%d] Authentication failure for user %s.", 
                 conn->connectionID, session->user.username);
             WriteToConnection(conn, "Authentication failed.\n");
-            session->nextLine[0] = '\0';
+            ClearNextLine(conn->inputBuffer);
             session->loginAttempts++;
             if (session->loginAttempts >= MAX_LOGIN_ATTEMPTS)
             {
@@ -157,7 +150,7 @@ static void CheckPassword(Session *session)
             conn->connectionStatus = AUTHENTICATED;
             Info("[%d] User %s logged in successfully.", 
                 conn->connectionID, session->user.username);
-            session->nextLine[0] = '\0';
+            ClearNextLine(conn->inputBuffer);
             LoggedIn(session);
         }
     }

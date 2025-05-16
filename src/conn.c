@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <vbbs/rb.h>
+#include <vbbs/buffer.h>
 #include <vbbs/log.h>
 #include <vbbs/conn.h>
 #include <vbbs/conn/console.h>
@@ -51,8 +51,8 @@ void InitConnection(Connection *conn)
     conn->outputStream = stdout;
     conn->data = NULL;
     InitTerminal(&conn->terminal);
-    conn->inputBuffer = NewRingBuffer(CONNECTION_BUFFER_SIZE);
-    conn->outputBuffer = NewRingBuffer(CONNECTION_BUFFER_SIZE);
+    conn->inputBuffer = NewInputBuffer(CONNECTION_BUFFER_SIZE);
+    conn->outputBuffer = NewBuffer(CONNECTION_BUFFER_SIZE);
     if (conn->inputBuffer == NULL || conn->outputBuffer == NULL)
     {
         Error("Failed to create input/output buffers for connection.\n");
@@ -64,6 +64,7 @@ void InitConnection(Connection *conn)
 
 void DestroyConnection(Connection *conn)
 {
+    Disconnect(conn);
     switch(conn->connectionType)
     {
         case TELNET:
@@ -73,15 +74,25 @@ void DestroyConnection(Connection *conn)
         case SERIAL:
         case MODEM:
         default:
-            free(conn);
             break;
     }
+    if (conn->inputBuffer != NULL)
+    {
+        DestroyInputBuffer(conn->inputBuffer);
+        conn->inputBuffer = NULL;
+    }
+    if (conn->outputBuffer != NULL)
+    {
+        DestroyBuffer(conn->outputBuffer);
+        conn->outputBuffer = NULL;
+    }
+    free(conn);
 }
 
 void WriteToConnection(Connection *conn, const char *format, ...)
 {
     va_list args;
-    char message[1024];
+    char message[256];
 
     if (conn->connectionStatus == DISCONNECTED)
     {
@@ -90,7 +101,7 @@ void WriteToConnection(Connection *conn, const char *format, ...)
     
     va_start(args, format);
     vsnprintf(message, sizeof(message), format, args);
-    WriteStringToRingBuffer(conn->outputBuffer, message);
+    WriteStringToBuffer(conn->outputBuffer, message);
     va_end(args);
     WriteBufferToConnection(conn);
 }
@@ -126,17 +137,6 @@ void Disconnect(Connection *conn)
             break;
     }
     conn->connectionStatus = DISCONNECTED;
-
-    if (conn->inputBuffer != NULL)
-    {
-        DestroyRingBuffer(conn->inputBuffer);
-        conn->inputBuffer = NULL;
-    }
-    if (conn->outputBuffer != NULL)
-    {
-        DestroyRingBuffer(conn->outputBuffer);
-        conn->outputBuffer = NULL;
-    }
 }
 
 /** 
@@ -146,78 +146,79 @@ void Disconnect(Connection *conn)
  */
 int WriteBufferToConnection(Connection *conn)
 {
-    int bytesWritten = 0, n = 0;
+    int bytesWritten = 0, i = 0, n = 0;
     char c;
 
     if (conn == NULL || conn->outputBuffer == NULL || 
-        IsRingBufferEmpty(conn->outputBuffer))
+        IsBufferEmpty(conn->outputBuffer))
     {
         return 0;
     }
 
     do
     {
-        c = PeekRingBuffer(conn->outputBuffer);
-
-        /** Output a character, removing escape codes if needed. */
         if (conn->terminal.isANSI)
         {
-            n = fputc(c, conn->outputStream);
-            if (n == EOF)
+            /* Since the terminal supports ANSI, just write the whole
+                buffer out if possible. */
+            n = WriteBufferToStream(conn->outputBuffer, conn->outputStream);
+            if (n <= 0)
             {
                 /* Can't write anymore, return. */
                 break;
             }
-            bytesWritten++;
+            ShiftBuffer(conn->outputBuffer, n);
+            bytesWritten += n;
         }
         else
         {
             /* If the terminal does not support ANSI, we need to strip the 
              * escape codes. */
 
-            if (conn->inEscape)
+            for (i = 0; i < conn->outputBuffer->length; i++)
             {
-                if (conn->inCSI)
+                c = conn->outputBuffer->bytes[i];
+                if (conn->inEscape)
                 {
-                    if ((c >= 'A' && c <= 'Z') || 
-                    (c >= 'a' && c <= 'z'))
+                    if (conn->inCSI)
                     {
-                        /* end of CSI */
-                        conn->inCSI = FALSE;
+                        if ((c >= 'A' && c <= 'Z') || 
+                        (c >= 'a' && c <= 'z'))
+                        {
+                            /* end of CSI */
+                            conn->inCSI = FALSE;
+                            conn->inEscape = FALSE;
+                        }
+                        /* skip all characters in the CSI */
+                    }
+                    else if (c == ANSI_CSI_CHAR)
+                    {
+                        /** start of CSI */
+                        conn->inCSI = TRUE;
+                    }
+                    else {
+                        /* single character escape */
                         conn->inEscape = FALSE;
                     }
-                    /* skip all characters in the CSI */
                 }
-                else if (c == ANSI_CSI_CHAR)
+                else if (c == ANSI_ESCAPE_CHAR)
                 {
-                    /** start of CSI */
-                    conn->inCSI = TRUE;
+                    /** start of escape */
+                    conn->inEscape = TRUE;
                 }
-                else {
-                    /* single character escape */
-                    conn->inEscape = FALSE;
-                }
-            }
-            else if (c == ANSI_ESCAPE_CHAR)
-            {
-                /** start of escape */
-                conn->inEscape = TRUE;
-            }
-            else
-            {
-                n = fputc(c, conn->outputStream);
-                if (n == EOF)
+                else
                 {
-                    /* Can't write anymore, return. */
-                    break;
+                    n = fputc(c, conn->outputStream);
+                    if (n == EOF)
+                    {
+                        /* Can't write anymore, return. */
+                        break;
+                    }
+                    bytesWritten++;
                 }
-                bytesWritten++;
-            }
+            } 
 
         } /* end ANSI support check */
-
-        /** Remove the character we wrote earlier. */
-        PopRingBuffer(conn->outputBuffer);
     } while (n > 0);
  
     fflush(conn->outputStream);

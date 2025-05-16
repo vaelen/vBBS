@@ -30,6 +30,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include <vbbs/log.h>
 #include <vbbs/terminal.h>
+#include <vbbs/rb.h>
 
 void InitTerminal(Terminal *terminal)
 {
@@ -39,22 +40,29 @@ void InitTerminal(Terminal *terminal)
     terminal->height = 24;
 }
 
-void NegotiateTerminal(FILE *in, FILE *out, Terminal *terminal)
+void Identify(Buffer *out)
+{
+    WriteStringToBuffer(out, "[Press Enter to Continue]\n");
+    WriteStringToBuffer(out, SET_CONCEAL);
+    WriteStringToBuffer(out, IDENTIFY);
+}
+
+void CheckIdentifyResponse(Buffer *out, const char *response,
+    Terminal *terminal)
 {
     char da[51], attr[51];
     int i = 0, j = 0, n = 0;
     int attrs[25]; /* each attribute is at least 2 bytes */
 
-    fprintf(out, "[Press Enter to Continue]\n");
-    fflush(out);
+    if (out == NULL || response == NULL || terminal == NULL)
+    {
+        return;
+    }
 
-    fprintf(out, "%s", SET_CONSEAL);
-    fprintf(out, "%s", IDENTIFY);
-    fflush(out);
+    WriteStringToBuffer(out, SET_CONCEAL_OFF);
 
-    i = fscanf(in, IDENTIFY_RESPONSE, da);
-    fprintf(out, "%s", SET_CONSEAL_OFF);
-    fflush(out);
+    i = sscanf(response, IDENTIFY_RESPONSE, da);
+    WriteStringToBuffer(out, SET_CONCEAL_OFF);
 
     if (i == 1)
     {
@@ -127,36 +135,12 @@ void NegotiateTerminal(FILE *in, FILE *out, Terminal *terminal)
         }
     } /* Got ident response */
 
-    if (!terminal->isANSI)
-    {
-        fprintf(out, "Does your terminal support ANSI escape codes? (y/n): ");
-        fflush(out);
-        do
-        {
-            i = fgetc(in);
-            switch (i)
-            {
-                case 'y':
-                case 'Y':
-                    terminal->isANSI = TRUE;
-                    i = EOF;
-                    break;
-                case 'n':
-                case 'N':
-                    terminal->isANSI = FALSE;
-                    i = EOF;
-                    break;
-            }
-        } while (i != EOF);
-    } /* is not ANSI */
-
     if(terminal->isANSI)
     {
-        fprintf(out, "ANSI escape codes enabled.\n");
+        WriteStringToBuffer(out, "ANSI escape codes enabled.\n");
     }
     else
     {
-        fprintf(out, "ANSI escape codes disabled.\n");
+        WriteStringToBuffer(out, "ANSI escape codes disabled.\n");
     }
-    fflush(out);
 }

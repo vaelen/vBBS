@@ -27,6 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <vbbs/types.h>
+#include <vbbs/buffer.h>
 #include <stdio.h>
 
 /**
@@ -84,8 +85,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SET_BLINK_OFF "\033[25m"
 #define SET_REVERSE "\033[7m"
 #define SET_REVERSE_OFF "\033[27m"
-#define SET_CONSEAL "\033[8m"
-#define SET_CONSEAL_OFF "\033[28m"
+#define SET_CONCEAL "\033[8m"
+#define SET_CONCEAL_OFF "\033[28m"
 #define SET_STRIKETHROUGH "\033[9m"
 #define SET_STRIKETHROUGH_OFF "\033[29m"
 
@@ -148,6 +149,8 @@ typedef struct
 } Terminal;
 
 void InitTerminal(Terminal *terminal);
-void NegotiateTerminal(FILE *in, FILE *out, Terminal *terminal);
+void Identify(Buffer *out);
+void CheckIdentifyResponse(Buffer *out, const char *response,
+    Terminal *terminal);
 
 #endif

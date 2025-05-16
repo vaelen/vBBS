@@ -29,7 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/types.h>
 
 #include <stdio.h>
-#include <vbbs/rb.h>
+#include <vbbs/buffer.h>
 #include <vbbs/user.h>
 #include <vbbs/terminal.h>
 
@@ -60,8 +60,8 @@ typedef struct
     FILE *outputStream;
     void *data;
     Terminal terminal;
-    RingBuffer *inputBuffer;
-    RingBuffer *outputBuffer;
+    InputBuffer *inputBuffer;
+    Buffer *outputBuffer;
     bool inEscape;
     bool inCSI;
 } Connection;
