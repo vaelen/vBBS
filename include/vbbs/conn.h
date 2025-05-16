@@ -50,7 +50,6 @@ typedef enum
 
 typedef struct
 {
-    unsigned int connectionID;
     unsigned int connectionStatus;
     unsigned int connectionType;
     unsigned int connectionSpeed;
@@ -68,12 +67,10 @@ typedef struct
 
 /* typedef void (*DisconnectFunction)(Connection *conn);*/
 
-void InitConnection(Connection *conn);
-bool AuthenticateConnection(Connection *conn, const char *username, 
-    const char *password);
+Connection* NewConnection(void);
+void DestroyConnection(Connection *conn);
+void Disconnect(Connection *conn);
 void WriteToConnection(Connection *conn, const char *format, ...);
 int WriteBufferToConnection(Connection *conn);
-void Disconnect(Connection *conn);
-void DestroyConnection(Connection *conn);
 
 #endif

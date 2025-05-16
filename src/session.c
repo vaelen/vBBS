@@ -35,12 +35,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define MAX_LOGIN_ATTEMPTS 3
 
-/** Input handlers */
-static void PromptUserName(Session *session);
-static void PromptPassword(Session *session);
-static void CheckPassword(Session *session);
-static void LoggedIn(Session *session);
+static uint32_t sessionIDCounter = 0;
 
+/** Input handlers */
+void PromptUserName(Session *session);
+void PromptPassword(Session *session);
+void CheckPassword(Session *session);
+void LoggedIn(Session *session);
 
 Session* NewSession(Connection *conn)
 {
@@ -50,6 +51,7 @@ Session* NewSession(Connection *conn)
         Error("Failed to allocate memory for session.");
         return NULL;
     }
+    session->sessionID = ++sessionIDCounter;
     session->conn = conn;
     InitUser(&session->user);
     session->eventHandler = NULL;
@@ -76,7 +78,40 @@ void DestroySession(Session *session)
         session->conn = NULL;
     }
 
+    Info("Destroying session #%d.", session->sessionID);
+
     free(session);
+}
+
+void CheckTerminalIdentity(Session *session)
+{
+    Connection *conn;
+
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    conn = session->conn;
+
+    CheckIdentifyResponse(conn->outputBuffer, 
+        conn->inputBuffer->nextLine, &conn->terminal);
+
+    session->eventHandler = PromptUserName;
+    PromptUserName(session);
+}
+
+void IdentifyTerminal(Session *session)
+{ 
+    Connection *conn;
+
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    conn = session->conn;
+
+    Identify(conn->outputBuffer);
+    session->eventHandler = CheckTerminalIdentity;
 }
 
 void Connected(Session *session)
@@ -91,9 +126,10 @@ void Connected(Session *session)
 
     session->loginAttempts = 0;
     conn->connectionStatus = CONNECTED;
-    WriteToConnection(conn, "Connected to vBBS.\n");
-    session->eventHandler = PromptUserName;
-    PromptUserName(session);
+    WriteToConnection(conn, "Connected to %s.\n", VBBS_VERSION_STRING);
+
+    session->eventHandler = IdentifyTerminal;
+    IdentifyTerminal(session);
 }
 
 void PromptUserName(Session *session)
@@ -160,7 +196,7 @@ void CheckPassword(Session *session)
             conn->inputBuffer->nextLine))
         {
             Info("[%d] Authentication failure for user %s.", 
-                conn->connectionID, session->user.username);
+                session->sessionID, session->user.username);
             WriteToConnection(conn, "Authentication failed.\n");
             ClearNextLine(conn->inputBuffer);
             session->loginAttempts++;
@@ -169,7 +205,7 @@ void CheckPassword(Session *session)
                 WriteToConnection(conn, 
                     "Too many failed attempts. Disconnecting...\n");
                 Info("[%d] Too many failed attempts. Disconnecting...", 
-                    conn->connectionID);
+                    session->sessionID);
                 Disconnect(conn);
             }
             else
@@ -181,7 +217,7 @@ void CheckPassword(Session *session)
         {
             conn->connectionStatus = AUTHENTICATED;
             Info("[%d] User %s logged in successfully.", 
-                conn->connectionID, session->user.username);
+                session->sessionID, session->user.username);
             ClearNextLine(conn->inputBuffer);
             LoggedIn(session);
         }

@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/user.h>
 #include <vbbs/terminal.h>
 
-#ifdef __unix__
+#ifdef _POSIX_VERSION
 #include <vbbs/conn/telnet/unix.h>
 #else
 typedef struct
@@ -49,5 +49,8 @@ Connection* TelnetListenerAccept(TelnetListener *listener);
 
 void DisconnectTelnetConnection(Connection *conn);
 void DestroyTelnetConnection(Connection *conn);
+
+const char* TelnetRemoteAddress(Connection *conn);
+int TelnetRemotePort(Connection *conn);
 
 #endif

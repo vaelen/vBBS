@@ -37,7 +37,7 @@ const char *LEVELS[] = {
     "ERROR"
 };
 
-FILE *LOG;
+FILE *LOG = NULL;
 
 /**
  * Initialize the log file. 
@@ -49,14 +49,14 @@ void InitLog(const char *filename)
 {
     if (LOG != NULL)
     {
+        Info("Closing existing log file.");
         CloseLog();
     }
-
+    Info("Opening log file: %s", filename);
     LOG = fopen(filename, "a");
     if (LOG == NULL)
     {
-        fprintf(stderr, "Error opening log file: %s\n", filename);
-        exit(1);
+        Error("Error opening log file: %s", filename);
     }
 }
 /**
@@ -72,35 +72,18 @@ void CloseLog(void)
 }
 
 /** 
- * Helper method to log to a stream. 
- * This is called by other methods here. 
+ * Helper method called by other methods. 
  */
-void _Log(FILE *stream, LogLevel level, const char *format, va_list args)
+void _LogMessage(FILE *stream, LogLevel level, const char *format, va_list args)
 {
     if (stream == NULL)
     {
         return;
     }
-
     fprintf(stream, "[%s] ", LEVELS[level]);
     vfprintf(stream, format, args);
     fprintf(stream, "\n");
-}
-
-/** 
- * Helper method to log to stderr and the log if it is defined. 
- * This is called by other methods. 
- */
-void _LogMessage(LogLevel level, const char *format, va_list args)
-{
-    _Log(stderr, level, format, args);
-    fflush(stderr);
-
-    if (LOG != NULL)
-    {
-        _Log(LOG, level, format, args);
-        fflush(LOG);
-    }
+    fflush(stream);
 }
 
 /**
@@ -110,8 +93,14 @@ void LogMessage(LogLevel level, const char *format, ...)
 {
     va_list args;
     va_start(args, format);
-    _LogMessage(level, format, args);
+    _LogMessage(stderr, level, format, args);
     va_end(args);
+    if (LOG != NULL)
+    {
+        va_start(args, format);
+        _LogMessage(LOG, level, format, args);
+        va_end(args);
+    }
 }
 
 /**
@@ -121,8 +110,14 @@ void Debug(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    _LogMessage(LOG_DEBUG, format, args);
+    _LogMessage(stderr, LOG_DEBUG, format, args);
     va_end(args);
+    if (LOG != NULL)
+    {
+        va_start(args, format);
+        _LogMessage(LOG, LOG_DEBUG, format, args);
+        va_end(args);
+    }
 }
 
 /**
@@ -132,8 +127,14 @@ void Info(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    _LogMessage(LOG_INFO, format, args);
+    _LogMessage(stderr, LOG_INFO, format, args);
     va_end(args);
+    if (LOG != NULL)
+    {
+        va_start(args, format);
+        _LogMessage(LOG, LOG_INFO, format, args);
+        va_end(args);
+    }
 }
 
 /**
@@ -143,8 +144,14 @@ void Warning(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    _LogMessage(LOG_WARNING, format, args);
+    _LogMessage(stderr, LOG_WARNING, format, args);
     va_end(args);
+    if (LOG != NULL)
+    {
+        va_start(args, format);
+        _LogMessage(LOG, LOG_WARNING, format, args);
+        va_end(args);
+    }
 }
 
 /**
@@ -154,6 +161,12 @@ void Error(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    _LogMessage(LOG_ERROR, format, args);
+    _LogMessage(stderr, LOG_ERROR, format, args);
     va_end(args);
+    if (LOG != NULL)
+    {
+        va_start(args, format);
+        _LogMessage(LOG, LOG_ERROR, format, args);
+        va_end(args);
+    }
 }

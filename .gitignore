@@ -54,3 +54,5 @@ dkms.conf
 bin/*
 obj/*
 .vscode/*
+
+*.log

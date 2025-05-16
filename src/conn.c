@@ -37,9 +37,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/conn/modem.h>
 #include <vbbs/conn/telnet.h>
 
-void InitConnection(Connection *conn)
+Connection *NewConnection(void)
 {
-    conn->connectionID = 0;
+    Connection *conn = (Connection *)malloc(sizeof(Connection));
+    if (conn == NULL)
+    {
+        Error("Failed to allocate memory for connection.");
+        return NULL;
+    }
     conn->connectionStatus = DISCONNECTED;
     conn->connectionType = CONSOLE;
     conn->connectionSpeed = 9600;
@@ -50,14 +55,22 @@ void InitConnection(Connection *conn)
     conn->data = NULL;
     InitTerminal(&conn->terminal);
     conn->inputBuffer = NewInputBuffer(CONNECTION_BUFFER_SIZE);
-    conn->outputBuffer = NewBuffer(CONNECTION_BUFFER_SIZE);
-    if (conn->inputBuffer == NULL || conn->outputBuffer == NULL)
+    if (conn->inputBuffer == NULL)
     {
-        Error("Failed to create input/output buffers for connection.\n");
-        exit(EXIT_FAILURE);
+        Error("Failed to create input buffer for connection.\n");
+        free(conn);
+        return NULL;
+    }
+    conn->outputBuffer = NewBuffer(CONNECTION_BUFFER_SIZE);
+    if (conn->outputBuffer == NULL)
+    {
+        Error("Failed to create output buffer for connection.\n");
+        free(conn);
+        return NULL;
     }
     conn->inEscape = FALSE;
     conn->inCSI = FALSE;
+    return conn;
 }
 
 void DestroyConnection(Connection *conn)
@@ -68,22 +81,45 @@ void DestroyConnection(Connection *conn)
         case TELNET:
             DestroyTelnetConnection(conn);
             break;
-        case CONSOLE:
-        case SERIAL:
         case MODEM:
+            break;
+        case SERIAL:
+            break;
+        case CONSOLE:
         default:
             break;
     }
+
     if (conn->inputBuffer != NULL)
     {
         DestroyInputBuffer(conn->inputBuffer);
         conn->inputBuffer = NULL;
     }
+    
     if (conn->outputBuffer != NULL)
     {
         DestroyBuffer(conn->outputBuffer);
         conn->outputBuffer = NULL;
     }
+
+    if (conn->inputStream != stdin)
+    {
+        fclose(conn->inputStream);
+        conn->inputStream = NULL;
+    }
+    
+    if (conn->outputStream != stdout)
+    {
+        fclose(conn->outputStream);
+        conn->outputStream = NULL;
+    }
+
+    if (conn->data != NULL)
+    {
+        free(conn->data);
+        conn->data = NULL;
+    }
+
     free(conn);
 }
 
