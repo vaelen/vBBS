@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /***** UNIX Implementation Using Berkeley Sockets *****/
 
-#ifdef __unix__
+#ifdef _POSIX_VERSION
 
 #include <err.h>
 #include <errno.h>
@@ -126,7 +126,7 @@ Connection* TelnetListenerAccept(TelnetListener *listener)
     }
     telnetData->socket = sockfd;
     telnetData->remoteAddress = remoteAddress;
-    conn = (Connection *)malloc(sizeof(Connection));
+    conn = NewConnection();
     if (conn == NULL)
     {
         Error("Telnet: Memory allocation failed for connection.");
@@ -134,7 +134,6 @@ Connection* TelnetListenerAccept(TelnetListener *listener)
         close(sockfd);
         return NULL;
     }
-    InitConnection(conn);
     conn->connectionType = TELNET;
     conn->connectionStatus = CONNECTED;
     conn->data = telnetData;
@@ -158,8 +157,15 @@ Connection* TelnetListenerAccept(TelnetListener *listener)
 
 void DestroyTelnetListener(TelnetListener *listener) 
 {
-    close(listener->socket);
-    Info("Telnet: Listener closed on port %d", listener->port);
+    if (listener == NULL)
+    {
+        return;
+    }
+    if (listener->socket >= 0)
+    {
+        close(listener->socket);
+        Info("Telnet: Listener closed on port %d", listener->port);
+    }
     free(listener);
 }
 
@@ -208,4 +214,26 @@ void DestroyTelnetConnection(Connection *conn)
     }   
 }
 
-#endif /* __unix__ */
+const char* TelnetRemoteAddress(Connection *conn)
+{
+    TelnetConnectionData *telnetData = NULL;
+    if (conn == NULL || conn->data == NULL)
+    {
+        return "";
+    }
+    telnetData = (TelnetConnectionData *)conn->data;
+    return inet_ntoa(telnetData->remoteAddress.sin_addr);
+}
+
+int TelnetRemotePort(Connection *conn)
+{
+    TelnetConnectionData *telnetData = NULL;
+    if (conn == NULL || conn->data == NULL)
+    {
+        return -1;
+    }
+    telnetData = (TelnetConnectionData *)conn->data;
+    return ntohs(telnetData->remoteAddress.sin_port);
+}
+
+#endif /* _POSIX_VERSION */

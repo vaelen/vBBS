@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/user.h>
 #include <vbbs/terminal.h>
 
-#ifdef __unix__
+#ifdef _POSIX_VERSION
 #include <arpa/inet.h>
 
 typedef struct TelnetListener
@@ -42,5 +42,5 @@ typedef struct TelnetListener
    struct sockaddr_in serverAddress;
 } TelnetListener;
 
-#endif /* __unix__ */
+#endif /* _POSIX_VERSION */
 #endif

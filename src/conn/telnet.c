@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /***** UNIX Implementation Using Berkeley Sockets *****/
 
-#ifdef __unix__
+#ifdef _POSIX_VERSION
 
 #include "telnet/unix.c"
 
@@ -59,6 +59,18 @@ void CloseTelnetListener(TelnetListener *listener)
 void DisconnectTelnet(Connection *conn)
 {
     Warn("DisconnectTelnet: Not implemented on this platform.");
+}
+
+const char* TelnetRemoteAddress(Connection *conn)
+{
+    Warn("TelnetRemoteAddress: Not implemented on this platform.");
+    return "Unknown";
+}
+
+int TelnetRemotePort(Connection *conn)
+{
+    Warn("TelnetRemotePort: Not implemented on this platform.");
+    return -1;
 }
 
 #endif

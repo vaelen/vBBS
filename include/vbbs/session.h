@@ -40,6 +40,7 @@ typedef void (*EventHandler)(Session *session);
 
 struct Session {
    Connection *conn;
+   uint32_t sessionID;
    User user;
    EventHandler eventHandler;
    uint8_t loginAttempts;

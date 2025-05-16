@@ -28,8 +28,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <signal.h>
 #include <errno.h>
 
-#ifdef __unix__
+#ifdef _POSIX_VERSION
+#include <unistd.h>
 #include <sys/select.h>
+#include <fcntl.h>
 #endif
 
 bool running = TRUE;
@@ -48,31 +50,204 @@ void SessionDestructor(void *item)
     Session *session = (Session *)item;
     if (session != NULL)
     {
-        Info("Destroying session.");
         Disconnect(session->conn);
         DestroySession(session);
     }
 }
 
+void CreateConsoleConnection(ArrayList *sessions)
+{
+    Connection *conn;
+    Session *session;
+
+    /** Create the console connection */
+    conn = NewConnection();
+    if (conn == NULL)
+    {
+        Error("Failed to create console connection.");
+        return;
+    }
+    conn->inputStream = stdin;
+    conn->outputStream = stdout;
+    conn->connectionType = CONSOLE;
+    conn->connectionStatus = CONNECTED;
+
+    session = NewSession(conn);
+    if (session == NULL)
+    {
+        Error("Failed to create session.");
+        DestroyConnection(conn);
+        return;
+    }
+
+    session->eventHandler = Connected;
+    Connected(session);
+
+    AddToArrayList(sessions, session);
+
+    conn = NULL;
+    session = NULL;
+}
+
+void AcceptTelnetConnection(TelnetListener *listener, ArrayList *sessions)
+{
+    Connection *conn;
+    Session *session;
+
+    conn = TelnetListenerAccept(listener);
+    if (conn != NULL)
+    {
+        session = NewSession(conn);
+        if (session == NULL)
+        {
+            Error("Failed to create session.");
+            Disconnect(session->conn);
+            return;
+        }
+
+        AddToArrayList(sessions, session);
+
+        Info("[%d] New connection from %s:%d", 
+            session->sessionID,
+            TelnetRemoteAddress(conn),
+            TelnetRemotePort(conn));
+
+        session->eventHandler = Connected;
+        Connected(session);
+    }
+}
+
+void ReadFromSession(Session *session)
+{
+    ReadDataFromStream(session->conn->inputBuffer, 
+        session->conn->inputStream);
+    if(feof(session->conn->inputStream))
+    {
+        if (session->conn->inputStream == stdin)
+        {
+            running = FALSE;
+            Info("Received EOF on stdin, shutting down.");
+        }
+        Disconnect(session->conn);
+        return;
+    }
+    else if (ferror(session->conn->inputStream))
+    {
+        switch (errno)
+        {
+            case EINTR:
+                /* Non-blocking read interrupted, continue. */
+                break;
+            case EAGAIN:
+                /* Non-blocking read blocked, continue. */
+                break;
+            default:
+                Error("[%d] Error reading from input stream: %s", 
+                    session->sessionID,
+                    strerror(errno));
+                Disconnect(session->conn);
+                break;
+        }
+    }
+    if (IsNextLineReady(session->conn->inputBuffer))
+    {
+        session->eventHandler(session);
+    }
+}
+
+void WriteToSession(Session *session)
+{
+    int bytesWritten;
+
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+
+    bytesWritten = WriteBufferToConnection(session->conn);
+    Info("[%d] Bytes written: %d", session->sessionID, 
+        bytesWritten);
+    if(feof(session->conn->outputStream))
+    {
+        Debug("End of file reached on input stream.");
+        Disconnect(session->conn);
+        return;
+    }
+    else if (ferror(session->conn->outputStream))
+    {
+        switch (errno)
+        {
+            case EINTR:
+                /* Non-blocking write interrupted, continue. */
+                break;
+            case EAGAIN:
+                /* Non-blocking write blocked, continue. */
+                break;
+            default:
+                Error("[%d] Error writing to output stream: %s", 
+                    session->sessionID,
+                    strerror(errno));
+                Disconnect(session->conn);
+                break;
+        }
+    }
+}
+
+void PruneSessions(ArrayList *sessions)
+{
+    bool done = FALSE;
+    Session *session;
+    int i;
+
+    while (!done)
+    {
+        done = TRUE;
+        for (i = 0; i < sessions->size; i++)
+        {
+            session = (Session *)GetFromArrayList(sessions, i);
+            if (session == NULL || session->conn == NULL)
+            {
+                continue;
+            }
+
+            if (session->conn->connectionStatus == DISCONNECTED)
+            {
+                if (session->conn->inputStream != stdin)
+                {
+                    RemoveFromArrayList(sessions, i);
+                    done = FALSE;
+                    break;
+                }
+            }
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
-    Session *session;
-    Connection *conn;
-    TelnetListener *telnetListener;
-    int port = 23;
+    Session *session = NULL;
 
     ArrayList *sessions = NewArrayList(10, SessionDestructor);
 
-#ifdef __unix__
+    TelnetListener *telnetListener = NULL;
+    int telnetPort = TELNET_PORT;
+
+#ifdef _POSIX_VERSION
     int fd, max_fd, i;
     fd_set read_fds, write_fds;
-    /* struct timeval timeout; */
+
+    /** Set stdin and stdout to non-blocking mode */
+    fcntl(fileno(stdin), F_SETFL, O_NONBLOCK);
+    fcntl(fileno(stdout), F_SETFL, O_NONBLOCK);
 #endif
 
+    /** TODO: Add support for command line arguments to set the port. */
     if (argc > 1)
     {
-        port = atoi(argv[1]);
+        telnetPort = atoi(argv[1]);
     }
+
+    InitLog("vbbs.log");
 
     Info("Starting %s", VBBS_VERSION_STRING);
 
@@ -80,22 +255,30 @@ int main(int argc, char *argv[])
 
     sessions = NewArrayList(32, SessionDestructor);
 
-    telnetListener = NewTelnetListener(port);
+    telnetListener = NewTelnetListener(telnetPort);
     if (telnetListener == NULL)
     {
-        Error("Failed to create Telnet listener on port %d.", port);
-        return EXIT_FAILURE;
+        Error("Failed to create Telnet listener on port %d.", telnetPort);
     }
     
+    /*
+    CreateConsoleConnection(sessions);
+    */
+
     /** Event Loop */
     while (running)
     {
-#ifdef __unix__
+
+/********** UNIX Event Loop **********/
+#ifdef _POSIX_VERSION
         FD_ZERO(&read_fds);
         FD_ZERO(&write_fds);
 
-        FD_SET(telnetListener->socket, &read_fds);
-        max_fd = telnetListener->socket;
+        if (telnetListener != NULL)
+        {
+            FD_SET(telnetListener->socket, &read_fds);
+            max_fd = telnetListener->socket;
+        }
 
         for (i = 0; i < sessions->size; i++)
         {
@@ -114,8 +297,6 @@ int main(int argc, char *argv[])
 
             if (session->conn->connectionStatus == DISCONNECTED)
             {
-                RemoveFromArrayList(sessions, i);
-                i--;
                 continue;
             }
 
@@ -154,23 +335,10 @@ int main(int argc, char *argv[])
         }
 
         /** Check for new connections */
-        if(FD_ISSET(telnetListener->socket, &read_fds))
+        if(telnetListener != NULL && 
+            FD_ISSET(telnetListener->socket, &read_fds))
         {
-            conn = TelnetListenerAccept(telnetListener);
-            if (conn != NULL)
-            {
-                Info("New connection accepted.");
-                session = NewSession(conn);
-                if (session == NULL)
-                {
-                    Error("Failed to create session.");
-                    Disconnect(session->conn);
-                    break;
-                }
-                AddToArrayList(sessions, session);
-                session->eventHandler = Connected;
-                Connected(session);
-            }
+            AcceptTelnetConnection(telnetListener, sessions);
         }
 
         /** Check for data on existing connections */
@@ -183,35 +351,7 @@ int main(int argc, char *argv[])
             /* Check for data to read from the input stream */
             if (FD_ISSET(fd, &read_fds))
             {
-                ReadDataFromStream(session->conn->inputBuffer, 
-                    session->conn->inputStream);
-                if(feof(session->conn->inputStream))
-                {
-                    Debug("End of file reached on input stream.");
-                    Disconnect(session->conn);
-                    break;
-                }
-                else if (ferror(session->conn->inputStream))
-                {
-                    switch (errno)
-                    {
-                        case EINTR:
-                            /* Non-blocking read interrupted, continue. */
-                            break;
-                        case EAGAIN:
-                            /* Non-blocking read blocked, continue. */
-                            break;
-                        default:
-                            Error("Error reading from input stream: %s", 
-                                strerror(errno));
-                            Disconnect(session->conn);
-                            break;
-                    }
-                }
-                if (IsNextLineReady(session->conn->inputBuffer))
-                {
-                    session->eventHandler(session);
-                }
+                ReadFromSession(session);
             } /* End if(FD_ISSET(in_fd, &read_fds)) */
             
             fd = fileno(session->conn->outputStream);
@@ -219,36 +359,18 @@ int main(int argc, char *argv[])
             /** Check for data to write to the output stream */
             if (FD_ISSET(fd, &write_fds))
             {
-                WriteBufferToConnection(session->conn);
-                if(feof(session->conn->outputStream))
-                {
-                    Debug("End of file reached on input stream.");
-                    Disconnect(session->conn);
-                    break;
-                }
-                else if (ferror(session->conn->outputStream))
-                {
-                    switch (errno)
-                    {
-                        case EINTR:
-                            /* Non-blocking write interrupted, continue. */
-                            break;
-                        case EAGAIN:
-                            /* Non-blocking write blocked, continue. */
-                            break;
-                        default:
-                            Error("Error writing to output stream: %s", 
-                                strerror(errno));
-                            Disconnect(session->conn);
-                            break;
-                    }
-                }
+                WriteToSession(session);
             } /* End if(FD_ISSET(out_fd, &write_fds)) */
         } /* End for(sessions) */
 #else
 perror("select() is not supported on this platform.");
         break;
 #endif
+
+/********** Generic Event Loop **********/
+
+        /** Prune Sessions */
+        PruneSessions(sessions);
 
         /** TODO: Other things should be processed here. */
 
@@ -259,6 +381,8 @@ perror("select() is not supported on this platform.");
     DestroyArrayList(sessions);
 
     Info("Shutting down %s", VBBS_VERSION_STRING);
+
+    CloseLog();
 
     return EXIT_SUCCESS;
 }
