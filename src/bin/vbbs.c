@@ -254,8 +254,9 @@ perror("select() is not supported on this platform.");
 
     } /* End of Event Loop */
 
-    DestroyArrayList(sessions);
     DestroyTelnetListener(telnetListener);
+
+    DestroyArrayList(sessions);
 
     Info("Shutting down %s", VBBS_VERSION_STRING);
 
