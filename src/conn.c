@@ -102,13 +102,13 @@ void DestroyConnection(Connection *conn)
         conn->outputBuffer = NULL;
     }
 
-    if (conn->inputStream != stdin)
+    if (conn->inputStream != NULL && conn->inputStream != stdin)
     {
         fclose(conn->inputStream);
         conn->inputStream = NULL;
     }
     
-    if (conn->outputStream != stdout)
+    if (conn->outputStream != NULL && conn->outputStream != stdout)
     {
         fclose(conn->outputStream);
         conn->outputStream = NULL;

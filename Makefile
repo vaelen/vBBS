@@ -1,6 +1,6 @@
 CC = clang
 LD = clang
-CFLAGS = -Iinclude -Wall -Wextra -pedantic -std=gnu89 
+CFLAGS = -Iinclude -Wall -Wextra -pedantic -std=gnu89 -g
 LDFLAGS = 
 
 OBJS = 	$(patsubst src/%.c,obj/%.o,$(wildcard src/*.c)) \
