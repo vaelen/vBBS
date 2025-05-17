@@ -47,7 +47,7 @@ void DestroyTelnetListener(TelnetListener *listener);
 /** This method will block until a connection is made. */
 Connection* TelnetListenerAccept(TelnetListener *listener);
 
-void DisconnectTelnetConnection(Connection *conn);
+void DisconnectTelnetConnection(Connection *conn, bool closeImmediately);
 void DestroyTelnetConnection(Connection *conn);
 
 const char* TelnetRemoteAddress(Connection *conn);

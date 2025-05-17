@@ -29,6 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/types.h>
 #include <vbbs/conn.h>
 
-void DisconnectSerial(Connection *conn);
+void DisconnectSerial(Connection *conn, bool closeImmediately);
+void DestroySerialConnection(Connection *conn);
 
 #endif

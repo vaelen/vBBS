@@ -36,7 +36,7 @@ typedef enum
 {
     LOG_DEBUG,
     LOG_INFO,
-    LOG_WARNING,
+    LOG_WARN,
     LOG_ERROR
 } LogLevel;
 
@@ -49,7 +49,7 @@ void LogMessage(LogLevel level, const char *format, ...);
 
 void Debug(const char* format, ...);
 void Info(const char* format, ...);
-void Warning(const char* format, ...);
+void Warn(const char* format, ...);
 void Error(const char* format, ...);
 
 #endif

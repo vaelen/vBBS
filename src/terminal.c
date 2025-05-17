@@ -35,7 +35,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void InitTerminal(Terminal *terminal)
 {
     terminal->type = "Unknown";
-    terminal->isANSI = FALSE;
+    terminal->isANSI = TRUE;
     terminal->width = 80;
     terminal->height = 24;
 }

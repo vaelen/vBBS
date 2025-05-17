@@ -148,16 +148,16 @@ void Info(const char* format, ...)
 /**
  * Log a warning message to the log file and stderr. 
  */
-void Warning(const char* format, ...)
+void Warn(const char* format, ...)
 {
     va_list args;
     va_start(args, format);
-    _LogMessage(stderr, LOG_WARNING, format, args);
+    _LogMessage(stderr, LOG_WARN, format, args);
     va_end(args);
     if (LOG != NULL)
     {
         va_start(args, format);
-        _LogMessage(LOG, LOG_WARNING, format, args);
+        _LogMessage(LOG, LOG_WARN, format, args);
         va_end(args);
     }
 }

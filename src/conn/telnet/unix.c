@@ -169,36 +169,29 @@ void DestroyTelnetListener(TelnetListener *listener)
     free(listener);
 }
 
-void DisconnectTelnetConnection(Connection *conn)
+void DisconnectTelnetConnection(Connection *conn, bool closeImmediately)
 {
     if (conn == NULL || conn->connectionType != TELNET)
     {
         return;
     }
 
-    if (conn->inputStream != NULL)
+    /* Don't close the output stream or the socket unless there is no more
+        data to send to the client. */
+    if (closeImmediately || 
+        (conn->outputBuffer != NULL && IsBufferEmpty(conn->outputBuffer)))
     {
-        fclose(conn->inputStream);
-        conn->inputStream = NULL;
+        if (conn->data != NULL)
+        {
+            TelnetConnectionData *telnetData = 
+                (TelnetConnectionData *)conn->data;
+            if (telnetData->socket >= 0)
+            {
+                close(telnetData->socket);
+                telnetData->socket = -1;
+            }
+        }
     }
-
-    if (conn->outputStream != NULL)
-    {
-        fclose(conn->outputStream);
-        conn->outputStream = NULL;
-    }
-
-    if (conn->data != NULL)
-    {
-        TelnetConnectionData *telnetData = (TelnetConnectionData *)conn->data;
-        close(telnetData->socket);
-        Debug("Telnet: Connection closed from %s:%d", 
-            inet_ntoa(telnetData->remoteAddress.sin_addr), 
-            ntohs(telnetData->remoteAddress.sin_port));
-        free(conn->data);
-        conn->data = NULL;
-    }
-
 }
 
 void DestroyTelnetConnection(Connection *conn)
@@ -207,7 +200,21 @@ void DestroyTelnetConnection(Connection *conn)
     {
         return;
     }
-    DisconnectTelnetConnection(conn);
+
+    if (conn->data != NULL)
+    {
+        TelnetConnectionData *telnetData = (TelnetConnectionData *)conn->data;
+        if (telnetData->socket >= 0)
+        {
+            close(telnetData->socket);
+            telnetData->socket = -1;
+        }
+        Debug("Telnet: Connection closed from %s:%d", 
+            inet_ntoa(telnetData->remoteAddress.sin_addr), 
+            ntohs(telnetData->remoteAddress.sin_port));
+        free(conn->data);
+        conn->data = NULL;
+    }
 }
 
 const char* TelnetRemoteAddress(Connection *conn)

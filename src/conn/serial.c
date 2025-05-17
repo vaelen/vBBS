@@ -31,38 +31,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/conn.h>
 #include <vbbs/conn/serial.h>
 
-void DisconnectSerial(Connection *conn)
+void DisconnectSerial(Connection *conn, bool closeImmediately)
 {
-    if (conn->inputStream != stdin)
+    /* No additional cleanup needed. */
+    (void)closeImmediately;
+    if (conn == NULL)
     {
-        fclose(conn->inputStream);
-    }
-    if (conn->outputStream != stdout)
-    {
-        fclose(conn->outputStream);
+        return;
     }
 }
 
-bool isSerialReadyToRead(Connection *conn)
+void DestroySerialConnection(Connection *conn)
 {
+    /* No additional cleanup needed. */
     if (conn == NULL)
     {
-        return FALSE;
+        return;
     }
-
-    // Implement serial port readiness check here
-    // This is a placeholder implementation
-    return TRUE;
-}
-
-bool isSerialReadyToWrite(Connection *conn)
-{
-    if (conn == NULL)
-    {
-        return FALSE;
-    }
-
-    // Implement serial port readiness check here
-    // This is a placeholder implementation
-    return TRUE;
 }
