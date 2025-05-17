@@ -337,21 +337,32 @@ int main(int argc, char *argv[])
         {
             session = (Session *)GetFromArrayList(sessions, i);
 
-            fd = fileno(session->conn->inputStream);
-
-            /* Check for data to read from the input stream */
-            if (FD_ISSET(fd, &read_fds))
+            if (session == NULL || session->conn == NULL)
             {
-                ReadFromSession(session);
-            } /* End if(FD_ISSET(in_fd, &read_fds)) */
+                continue;
+            }
+
+            if (session->conn->inputStream != NULL)
+            {
+                fd = fileno(session->conn->inputStream);
+
+                /* Check for data to read from the input stream */
+                if (FD_ISSET(fd, &read_fds))
+                {
+                    ReadFromSession(session);
+                } /* End if(FD_ISSET(in_fd, &read_fds)) */
+            }
             
-            fd = fileno(session->conn->outputStream);
-
-            /** Check for data to write to the output stream */
-            if (FD_ISSET(fd, &write_fds))
+            if (session->conn->outputStream != NULL)
             {
-                WriteToSession(session);
-            } /* End if(FD_ISSET(out_fd, &write_fds)) */
+                fd = fileno(session->conn->outputStream);
+
+                /** Check for data to write to the output stream */
+                if (FD_ISSET(fd, &write_fds))
+                {
+                    WriteToSession(session);
+                } /* End if(FD_ISSET(out_fd, &write_fds)) */
+            }
         } /* End for(sessions) */
 #else
 perror("select() is not supported on this platform.");
