@@ -75,18 +75,23 @@ Connection *NewConnection(void)
 
 void DestroyConnection(Connection *conn)
 {
-    Disconnect(conn);
+    Disconnect(conn, TRUE);
     switch(conn->connectionType)
     {
         case TELNET:
             DestroyTelnetConnection(conn);
             break;
         case MODEM:
+            DestroyModemConnection(conn);
             break;
         case SERIAL:
+            DestroySerialConnection(conn);
             break;
         case CONSOLE:
+            DestroyConsoleConnection(conn);
+            break;
         default:
+            Warn("Unknown connection type: %d.\n", conn->connectionType);
             break;
     }
 
@@ -123,53 +128,67 @@ void DestroyConnection(Connection *conn)
     free(conn);
 }
 
-void WriteToConnection(Connection *conn, const char *format, ...)
-{
-    va_list args;
-    char message[256];
-
-    if (conn->connectionStatus == DISCONNECTED)
-    {
-        return;
-    }
-    
-    va_start(args, format);
-    vsnprintf(message, sizeof(message), format, args);
-    WriteStringToBuffer(conn->outputBuffer, message);
-    va_end(args);
-}
-
-void Disconnect(Connection *conn)
+void Disconnect(Connection *conn, bool closeImmediately)
 {
     if (conn == NULL)
     {
         return;
     }
 
-    if (conn->outputStream != NULL)
+    if (conn->outputBuffer != NULL && IsBufferEmpty(conn->outputBuffer))
+    {
+        /* If the output buffer is empty, we can fully close the connection. */
+        closeImmediately = TRUE;
+    }
+
+    if (closeImmediately && conn->inputStream != NULL && 
+        conn->inputStream != stdin)
+    {
+        fclose(conn->inputStream);
+        conn->inputStream = NULL;
+    }
+    
+    if (closeImmediately && conn->outputStream != NULL)
     {
         fflush(conn->outputStream);
+        if (conn->outputStream != stdout)
+        {
+            /* We always close the output stream. */
+            fclose(conn->outputStream);
+            conn->outputStream = NULL;
+        }
     }
 
     switch(conn->connectionType)
     {
         case CONSOLE:
-            DisconnectConsole(conn);
+            DisconnectConsole(conn, closeImmediately);
             break;
         case SERIAL:
-            DisconnectSerial(conn);
+            DisconnectSerial(conn, closeImmediately);
             break;
         case MODEM:
-            DisconnectModem(conn);
+            DisconnectModem(conn, closeImmediately);
             break;
         case TELNET:
-            DisconnectTelnetConnection(conn);
+            DisconnectTelnetConnection(conn, closeImmediately);
             break;
         default:
-            Warning("Unknown connection type: %d.\n", conn->connectionType);
+            Warn("Unknown connection type: %d.\n", conn->connectionType);
             break;
     }
     conn->connectionStatus = DISCONNECTED;
+}
+
+void WriteToConnection(Connection *conn, const char *format, ...)
+{
+    va_list args;
+    char message[256];
+
+    va_start(args, format);
+    vsnprintf(message, sizeof(message), format, args);
+    WriteStringToBuffer(conn->outputBuffer, message);
+    va_end(args);
 }
 
 /** 

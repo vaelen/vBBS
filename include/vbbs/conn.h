@@ -69,7 +69,7 @@ typedef struct
 
 Connection* NewConnection(void);
 void DestroyConnection(Connection *conn);
-void Disconnect(Connection *conn);
+void Disconnect(Connection *conn, bool closeImmediately);
 void WriteToConnection(Connection *conn, const char *format, ...);
 int WriteBufferToConnection(Connection *conn);
 

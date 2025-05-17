@@ -29,6 +29,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/types.h>
 #include <vbbs/conn.h>
 
-void DisconnectConsole(Connection *conn);
+void DisconnectConsole(Connection *conn, bool closeImmediately);
+void DestroyConsoleConnection(Connection *conn);
 
 #endif

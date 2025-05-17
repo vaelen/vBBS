@@ -56,9 +56,14 @@ void CloseTelnetListener(TelnetListener *listener)
     Warn("CloseTelnetListener: Not implemented on this platform.");
 }
 
-void DisconnectTelnet(Connection *conn)
+void DisconnectTelnet(Connection *conn, bool closeImmediately)
 {
     Warn("DisconnectTelnet: Not implemented on this platform.");
+}
+
+void DestroyTelnetConnection(Connection *conn)
+{
+    Warn("DestroyTelnetConnection: Not implemented on this platform.");
 }
 
 const char* TelnetRemoteAddress(Connection *conn)

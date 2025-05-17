@@ -31,14 +31,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/conn.h>
 #include <vbbs/conn/console.h>
 
-void DisconnectConsole(Connection *conn)
+void DisconnectConsole(Connection *conn, bool closeImmediately)
 {
-    if (conn->inputStream != stdin)
+    /* No additional cleanup needed. */
+    (void)closeImmediately;
+    if (conn == NULL)
     {
-        fclose(conn->inputStream);
+        return;
     }
-    if (conn->outputStream != stdout)
+}
+
+void DestroyConsoleConnection(Connection *conn)
+{
+    /* No additional cleanup needed. */
+    if (conn == NULL)
     {
-        fclose(conn->outputStream);
+        return;
     }
 }

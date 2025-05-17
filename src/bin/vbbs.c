@@ -50,7 +50,6 @@ void SessionDestructor(void *item)
     Session *session = (Session *)item;
     if (session != NULL)
     {
-        Disconnect(session->conn);
         DestroySession(session);
     }
 }
@@ -101,7 +100,7 @@ void AcceptTelnetConnection(TelnetListener *listener, ArrayList *sessions)
         if (session == NULL)
         {
             Error("Failed to create session.");
-            Disconnect(session->conn);
+            DestroyConnection(conn);
             return;
         }
 
@@ -123,7 +122,7 @@ void ReadFromSession(Session *session)
             running = FALSE;
             Info("Received EOF on stdin, shutting down.");
         }
-        Disconnect(session->conn);
+        Disconnect(session->conn, FALSE);
         return;
     }
     else if (ferror(session->conn->inputStream))
@@ -140,11 +139,12 @@ void ReadFromSession(Session *session)
                 Error("[%d] Error reading from input stream: %s", 
                     session->sessionID,
                     strerror(errno));
-                Disconnect(session->conn);
+                Disconnect(session->conn, FALSE);
                 break;
         }
     }
-    if (IsNextLineReady(session->conn->inputBuffer))
+    if (IsNextLineReady(session->conn->inputBuffer) && 
+        session->eventHandler != NULL)
     {
         session->eventHandler(session);
     }
@@ -161,7 +161,7 @@ void WriteToSession(Session *session)
     if(feof(session->conn->outputStream))
     {
         Debug("End of file reached on input stream.");
-        Disconnect(session->conn);
+        Disconnect(session->conn, TRUE);
         return;
     }
     else if (ferror(session->conn->outputStream))
@@ -178,7 +178,7 @@ void WriteToSession(Session *session)
                 Error("[%d] Error writing to output stream: %s", 
                     session->sessionID,
                     strerror(errno));
-                Disconnect(session->conn);
+                Disconnect(session->conn, TRUE);
                 break;
         }
     }
@@ -203,7 +203,10 @@ void PruneSessions(ArrayList *sessions)
 
             if (session->conn->connectionStatus == DISCONNECTED)
             {
-                if (session->conn->inputStream != stdin)
+                if (session->conn->inputStream != stdin &&
+                    (session->conn->outputBuffer == NULL ||
+                        session->conn->outputStream == NULL ||
+                        IsBufferEmpty(session->conn->outputBuffer)))
                 {
                     RemoveFromArrayList(sessions, i);
                     done = FALSE;
@@ -226,6 +229,7 @@ int main(int argc, char *argv[])
 #ifdef _POSIX_VERSION
     int fd, max_fd, i;
     fd_set read_fds, write_fds;
+    struct timeval *timeout = NULL;
 
     /** Set stdin and stdout to non-blocking mode */
     fcntl(fileno(stdin), F_SETFL, O_NONBLOCK);
@@ -265,7 +269,7 @@ int main(int argc, char *argv[])
         FD_ZERO(&read_fds);
         FD_ZERO(&write_fds);
 
-        if (telnetListener != NULL)
+        if (telnetListener != NULL && telnetListener->socket >= 0)
         {
             FD_SET(telnetListener->socket, &read_fds);
             max_fd = telnetListener->socket;
@@ -276,44 +280,47 @@ int main(int argc, char *argv[])
             session = (Session *)GetFromArrayList(sessions, i);
             if (session == NULL)
             {
-                Warning("Session is NULL, skipping %d.", i);
+                Warn("Session is NULL, skipping %d.", i);
                 continue;
             }
 
             if (session->conn == NULL)
             {
-                Warning("Session connection is NULL, skipping %d.", i);
-                continue;
-            }
-
-            if (session->conn->connectionStatus == DISCONNECTED)
-            {
+                Warn("Session connection is NULL, skipping %d.", i);
                 continue;
             }
 
             if (!IsBufferFull(session->conn->inputBuffer->buffer))
             {
                 fd = fileno(session->conn->inputStream);
-                max_fd = MAX(max_fd, fd);
-                FD_SET(fd, &read_fds);
+                if (fd >= 0)
+                {
+                    max_fd = MAX(max_fd, fd);
+                    FD_SET(fd, &read_fds);
+                }
             }
     
             if (!IsBufferEmpty(session->conn->outputBuffer))
             {
                     fd = fileno(session->conn->outputStream);
-                    fd = MAX(max_fd, fd);
-                    FD_SET(fd, &write_fds);
+                    if (fd >= 0)
+                    {
+                        max_fd = MAX(max_fd, fd);
+                        FD_SET(fd, &write_fds);
+                    }
             }
         } /* End for(sessions) */
 
-        /*
-        timeout.tv_sec = 5;  // Set timeout to 5 seconds
-        timeout.tv_usec = 0;
-        */
-
-        if(select(max_fd + 1, &read_fds, &write_fds, NULL, NULL) < 0)
+        /** Set timeout for select() to 5 seconds */
+        if (timeout != NULL)
         {
-            if (errno == EINTR)
+            timeout->tv_sec = 5;
+            timeout->tv_usec = 0;
+        }   
+
+        if(select(max_fd + 1, &read_fds, &write_fds, NULL, timeout) < 0)
+        {
+            if (errno == EINTR || errno == EAGAIN)
             {
                 /* Interrupted by signal, continue. */
                 continue;

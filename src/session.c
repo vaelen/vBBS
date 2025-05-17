@@ -43,10 +43,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 static uint32_t sessionIDCounter = 0;
 
 /** Input handlers */
+void IdentifyTerminal(Session *session);
+void CheckTerminalIdentity(Session *session);
 void PromptUserName(Session *session);
 void PromptPassword(Session *session);
 void CheckPassword(Session *session);
 void LoggedIn(Session *session);
+void Logout(Session *session);
 
 Session* NewSession(Connection *conn)
 {
@@ -109,8 +112,6 @@ void DestroySession(Session *session)
         session->eventHandler = NULL;
     }
 
-    Info("[%d] Destroying session", session->sessionID);
-
     if (session->conn != NULL)
     {
         switch(session->conn->connectionType)
@@ -137,7 +138,6 @@ void DestroySession(Session *session)
                     TelnetRemotePort(session->conn));
                 break;
         }
-        Disconnect(session->conn);
         DestroyConnection(session->conn);
         session->conn = NULL;
     }
@@ -268,7 +268,7 @@ void CheckPassword(Session *session)
                     "Too many failed attempts. Disconnecting...\n");
                 Info("[%d] Too many failed attempts. Disconnecting...", 
                     session->sessionID);
-                Disconnect(conn);
+                Disconnect(conn, FALSE);
             }
             else
             {
@@ -296,5 +296,23 @@ void LoggedIn(Session *session)
     }
     conn = session->conn;
 
-    Disconnect(conn);
+    WriteToConnection(conn, SET_CONCEAL_OFF);
+    WriteToConnection(conn, RESET_MODES);
+    WriteToConnection(conn, "Welcome %s!\n", session->user.username);
+    WriteToConnection(conn, "You are now logged in.\n");
+
+    session->eventHandler = Logout;
+}
+
+void Logout(Session *session)
+{
+    Connection *conn;
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    conn = session->conn;
+    WriteToConnection(conn, "Goodbye!\n");
+    session->eventHandler = NULL;
+    Disconnect(conn, FALSE);
 }

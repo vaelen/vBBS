@@ -31,38 +31,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/conn.h>
 #include <vbbs/conn/modem.h>
 
-void DisconnectModem(Connection *conn)
+void DisconnectModem(Connection *conn, bool closeImmediately)
 {
-    if (conn->inputStream != stdin)
+    /* No additional cleanup needed. */
+    (void)closeImmediately;
+    if (conn == NULL)
     {
-        fclose(conn->inputStream);
-    }
-    if (conn->outputStream != stdout)
-    {
-        fclose(conn->outputStream);
+        return;
     }
 }
 
-bool isModemReadyToRead(Connection *conn)
+void DestroyModemConnection(Connection *conn)
 {
+    /* No additional cleanup needed. */
     if (conn == NULL)
     {
-        return FALSE;
+        return;
     }
-
-    // Implement modem readiness check here
-    // This is a placeholder implementation
-    return TRUE;
-}
-
-bool isModemReadyToWrite(Connection *conn)
-{
-    if (conn == NULL)
-    {
-        return FALSE;
-    }
-
-    // Implement modem readiness check here
-    // This is a placeholder implementation
-    return TRUE;
 }
