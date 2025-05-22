@@ -35,16 +35,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 typedef struct
 {
     uint8_t *buffer;     // Pointer to the buffer
-    size_t head;         // Index of the head of the buffer
-    size_t tail;         // Index of the tail of the buffer
-    size_t size;         // Current size of the buffer
-    size_t maxSize;      // Maximum size of the buffer
+    int head;         // Index of the head of the buffer
+    int tail;         // Index of the tail of the buffer
+    int size;         // Current size of the buffer
+    int maxSize;      // Maximum size of the buffer
 } RingBuffer;
 
-RingBuffer* NewRingBuffer(size_t size);
+RingBuffer* NewRingBuffer(int size);
 void DestroyRingBuffer(RingBuffer *rb);
-void WriteRingBuffer(RingBuffer *rb, const uint8_t *data, size_t size);
-void ReadRingBuffer(RingBuffer *rb, uint8_t *data, size_t size);
+void WriteRingBuffer(RingBuffer *rb, const uint8_t *data, int size);
+void ReadRingBuffer(RingBuffer *rb, uint8_t *data, int size);
 void ClearRingBuffer(RingBuffer *rb);
 bool IsRingBufferEmpty(RingBuffer *rb);
 bool IsRingBufferFull(RingBuffer *rb);

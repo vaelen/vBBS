@@ -53,7 +53,7 @@ const bool CRC16_REFLECTED[] = {
 /* CRC tables were generated using https://crccalc.com/ */
 static const uint16_t *CRC16_TABLES[];
 
-uint8_t Checksum(const void *data, size_t len) {
+uint8_t Checksum(const void *data, int len) {
     uint8_t chk = 0;
     const uint8_t *byte = data;
     while (len--) {
@@ -66,7 +66,7 @@ uint8_t ChecksumS(const char *str) {
     return Checksum(str, strlen(str));
 }
 
-uint16_t CRC16(CRC16_TYPE crcType, const void *data, size_t len)
+uint16_t CRC16(CRC16_TYPE crcType, const void *data, int len)
 {
     uint16_t crc = CRC16_INIT[crcType];
     const uint16_t *crcTable = CRC16_TABLES[crcType];

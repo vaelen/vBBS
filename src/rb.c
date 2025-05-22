@@ -28,7 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <string.h>
 
-RingBuffer* NewRingBuffer(size_t size)
+RingBuffer* NewRingBuffer(int size)
 {
     RingBuffer *rb = (RingBuffer *)malloc(sizeof(RingBuffer));
     if (rb == NULL)
@@ -58,18 +58,18 @@ void DestroyRingBuffer(RingBuffer *rb)
     free(rb);
 }
 
-void WriteRingBuffer(RingBuffer *rb, const uint8_t *data, size_t size)
+void WriteRingBuffer(RingBuffer *rb, const uint8_t *data, int size)
 {
-    size_t i;
+    int i;
     for (i = 0; i < size; i++)
     {
         PushRingBuffer(rb, data[i]);
     }
 }
 
-void ReadRingBuffer(RingBuffer *rb, uint8_t *data, size_t size)
+void ReadRingBuffer(RingBuffer *rb, uint8_t *data, int size)
 {
-    size_t i;
+    int i;
     for (i = 0; i < size; i++)
     {
         data[i] = PopRingBuffer(rb);
@@ -135,6 +135,6 @@ uint8_t PopRingBuffer(RingBuffer *rb)
 /** Write a null terminated string to the end of the buffer. */
 void WriteStringToRingBuffer(RingBuffer *rb, const char *str)
 {
-    size_t len = strlen(str);
+    int len = strlen(str);
     WriteRingBuffer(rb, (const uint8_t *)str, len);
 }
