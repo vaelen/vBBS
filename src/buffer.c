@@ -134,7 +134,7 @@ void ShiftBuffer(Buffer *buffer, int offset)
 
 /********** InputBuffer **********/
 
-InputBuffer* NewInputBuffer(size_t size)
+InputBuffer* NewInputBuffer(int size)
 {
     InputBuffer *buffer = (InputBuffer *)malloc(sizeof(InputBuffer));
     if (buffer == NULL)

@@ -74,7 +74,7 @@ typedef struct InputBuffer {
    char nextLine[256];
 } InputBuffer;
 
-InputBuffer* NewInputBuffer(size_t size);
+InputBuffer* NewInputBuffer(int size);
 void DestroyInputBuffer(InputBuffer *buffer);
 int ReadDataFromStream(InputBuffer *buffer, FILE *in);
 bool IsNextLineReady(InputBuffer *buffer);

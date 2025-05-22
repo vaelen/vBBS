@@ -36,9 +36,9 @@ typedef enum {
     CRC16_XMODEM = 1
 } CRC16_TYPE;
 
-uint8_t Checksum(const void *data, size_t len);
+uint8_t Checksum(const void *data, int len);
 uint8_t ChecksumS(const char *str);
-uint16_t CRC16(CRC16_TYPE crc_type, const void *data, size_t len);
+uint16_t CRC16(CRC16_TYPE crc_type, const void *data, int len);
 uint16_t CRC16S(CRC16_TYPE crcType, const char *str);
 
 #endif /* _VBBS_CRC_H */
