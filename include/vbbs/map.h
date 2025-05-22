@@ -1,5 +1,5 @@
-#ifndef _VBBS_DB_H
-#define _VBBS_DB_H
+#ifndef VBBS_MAP_H
+#define VBBS_MAP_H
 
 /*
 Copyright (c) 2025, Andrew Young
@@ -27,11 +27,34 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <vbbs/types.h>
+#include <vbbs/list.h>
+#include <vbbs/crc.h>
 
-/** TODO: Add System 7, DOS, etc. */
-#define PATH_SEPARATOR '/'
+typedef struct MapEntry {
+    char *key;
+    void *value;
+    ListItemDestructor valueDestructor;
+} MapEntry;
 
-#define DB_FIELD_SEPARATOR 0x1C
-#define DB_RECORD_SEPARATOR 0x1E
+typedef struct Map {
+    ArrayList **buckets;
+    size_t size;
+    int bucketCount;
+    ListItemDestructor valueDestructor;
+} Map;
+
+MapEntry *NewMapEntry(const char *key, void *value, 
+    ListItemDestructor valueDestructor);
+void MapEntryDestructor(void *item);
+void DestroyMapEntry(MapEntry *entry);
+
+Map *NewMap(ListItemDestructor valueDestructor);
+void DestroyMap(Map *map);
+void MapPut(Map *map, const char *key, void *value);
+void MapPutWithDestructor(Map *map, const char *key, void *value, 
+    ListItemDestructor valueDestructor);
+void *MapGet(const Map *map, const char *key);
+void MapRemove(Map *map, const char *key);
+void MapClear(Map *map);
 
 #endif

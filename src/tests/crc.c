@@ -28,6 +28,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <string.h>
 
+#include "shared.h"
+
 #define TEST_STRING "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 #define EXPECTED_CHECKSUM 0x1B
 #define EXPECTED_CRC16_CCITT 0xB65E
@@ -38,30 +40,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void testChecksum(void) {
     uint8_t chk = ChecksumS(TEST_STRING);
-    printf("    Checksum: Expected:  0x%02X, Actual:   0x%02X\t%s\n", 
-        EXPECTED_CHECKSUM, chk,
-        chk == EXPECTED_CHECKSUM ? SUCCESS : FAILURE);
+    printTestResult("Checksum", chk == EXPECTED_CHECKSUM);
 }
 
 
 void testCRC16_CCITT(void) {
     uint16_t crc = CRC16S(CRC16_CCITT, TEST_STRING);
-    printf(" CRC16/CCITT: Expected:0x%04X, Actual: 0x%04X\t%s\n", 
-        EXPECTED_CRC16_CCITT, crc, 
-        crc == EXPECTED_CRC16_CCITT ? SUCCESS : FAILURE);
+    printTestResult("CRC16/CCITT", crc == EXPECTED_CRC16_CCITT);
 }
 
 void testCRC16_XMODEM(void) {
     uint16_t crc = CRC16S(CRC16_XMODEM, TEST_STRING);
-    printf("CRC16/XMODEM: Expected:0x%04X, Actual: 0x%04X\t%s\n", 
-        EXPECTED_CRC16_XMODEM, crc, 
-        crc == EXPECTED_CRC16_XMODEM ? SUCCESS : FAILURE);
+    printTestResult("CRC16/XMODEM", crc == EXPECTED_CRC16_XMODEM);
 }
 
-int main(void) {
+void runAllCRCTests(void) {
+    printf("\nRunning CRC Tests...\n");
     testChecksum();
     testCRC16_CCITT();
     testCRC16_XMODEM();
     printf("\n");
-    return 0;
 }

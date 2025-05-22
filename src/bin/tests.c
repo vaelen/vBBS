@@ -1,6 +1,3 @@
-#ifndef _VBBS_DB_H
-#define _VBBS_DB_H
-
 /*
 Copyright (c) 2025, Andrew Young
 
@@ -26,12 +23,34 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <vbbs/types.h>
+#include <vbbs.h>
 
-/** TODO: Add System 7, DOS, etc. */
-#define PATH_SEPARATOR '/'
+#include "../tests/shared.h"
 
-#define DB_FIELD_SEPARATOR 0x1C
-#define DB_RECORD_SEPARATOR 0x1E
+int test_passed = 0;
+int test_failed = 0;
 
-#endif
+void printTestResult(const char *test, bool passed) {
+    if (passed) {
+        printf("%50s: %s\n", test, SUCCESS);
+        test_passed++;
+    } else {
+        printf("%50s: %s\n", test, FAILURE);
+        test_failed++;
+    }
+    fflush(stdout);
+}
+
+
+int main(void)
+{
+    runAllListTests();
+    runAllBufferTests();
+    runAllCRCTests();
+    runAllRingBufferTests();
+    runAllMapTests();
+    printf("Test Results: %d passed, %d failed\n", test_passed, test_failed);
+    return 0;
+}
+
+

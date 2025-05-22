@@ -39,6 +39,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/db.h>
 #include <vbbs/list.h>
 #include <vbbs/log.h>
+#include <vbbs/map.h>
 #include <vbbs/rb.h>
 #include <vbbs/session.h>
 #include <vbbs/sha1.h>
