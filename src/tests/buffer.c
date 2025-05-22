@@ -28,6 +28,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <string.h>
 
+#include "shared.h"
+
 #define TEST_STRING "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 #define SUCCESS "\033[0;32mSuccess\033[0m"
@@ -37,12 +39,13 @@ void testIsBufferEmpty(void) {
     Buffer *buffer = NewBuffer(10);
     if (buffer == NULL) {
         printf("Failed to create buffer\n");
+        printTestResult("testIsBufferEmpty", FALSE);
         return;
     }
     if (IsBufferEmpty(buffer)) {
-        printf("           IsBufferEmpty: %s\n", SUCCESS);
+        printTestResult("testIsBufferEmpty", TRUE);
     } else {
-        printf("           IsBufferEmpty: %s\n", FAILURE);
+        printTestResult("testIsBufferEmpty", FALSE);
     }
     DestroyBuffer(buffer);
 }
@@ -51,13 +54,14 @@ void testIsBufferFull(void) {
     Buffer *buffer = NewBuffer(2);
     if (buffer == NULL) {
         printf("Failed to create buffer\n");
+        printTestResult("testIsBufferFull", FALSE);
         return;
     }
     WriteToBuffer(buffer, TEST_STRING, 2);
     if (IsBufferFull(buffer)) {
-        printf("            IsBufferFull: %s\n", SUCCESS);
+        printTestResult("testIsBufferFull", TRUE);
     } else {
-        printf("            IsBufferFull: %s\n", FAILURE);
+        printTestResult("testIsBufferFull", FALSE);
     }
     DestroyBuffer(buffer);
 }
@@ -66,14 +70,15 @@ void testClearBuffer(void) {
     Buffer *buffer = NewBuffer(strlen(TEST_STRING));
     if (buffer == NULL) {
         printf("Failed to create buffer\n");
+        printTestResult("testClearBuffer", FALSE);
         return;
     }
     WriteToBuffer(buffer, TEST_STRING, strlen(TEST_STRING));
     ClearBuffer(buffer);
     if (IsBufferEmpty(buffer)) {
-        printf("             ClearBuffer: %s\n", SUCCESS);
+        printTestResult("testClearBuffer", TRUE);
     } else {
-        printf("             ClearBuffer: %s\n", FAILURE);
+        printTestResult("testClearBuffer", FALSE);
     }
     DestroyBuffer(buffer);
 }
@@ -84,27 +89,27 @@ void testReadWriteBuffer(void) {
     Buffer *buffer = NewBuffer(strlen(TEST_STRING));
     if (buffer == NULL) {
         printf("Failed to create buffer\n");
+        printTestResult("testReadWriteBuffer", FALSE);
         return;
     }
     bytesWritten = WriteToBuffer(buffer, TEST_STRING, strlen(TEST_STRING));
     if (bytesWritten != strlen(TEST_STRING)) {
-        printf("           WriteToBuffer: %s (Expected %lu, found %d)\n", 
-            FAILURE, strlen(TEST_STRING), bytesWritten);
+        printTestResult("testWriteToBuffer", FALSE);
     } else {
-        printf("           WriteToBuffer: %s\n", SUCCESS);
+        printTestResult("testWriteToBuffer", TRUE);
     }
     
     ReadFromBuffer(buffer, data, strlen(TEST_STRING));
     if (memcmp(data, TEST_STRING, strlen(TEST_STRING)) == 0) {
-        printf("          ReadFromBuffer: %s\n", SUCCESS);
+        printTestResult("testReadFromBuffer", TRUE);
     } else {
-        printf("          ReadFromBuffer: %s\n", FAILURE);
+        printTestResult("testReadFromBuffer", FALSE);
     }
 
     if (IsBufferEmpty(buffer)) {
-        printf("             ShiftBuffer: %s\n", SUCCESS);
+        printTestResult("testShiftBuffer", TRUE);
     } else {
-        printf("             ShiftBuffer: %s\n", FAILURE);
+        printTestResult("testShiftBuffer", FALSE);
     }
     DestroyBuffer(buffer);
 }
@@ -114,23 +119,24 @@ void testBufferOverflow(void) {
     Buffer *buffer = NewBuffer(strlen(TEST_STRING)-1);
     if (buffer == NULL) {
         printf("Failed to create buffer\n");
+        printTestResult("testBufferOverflow", FALSE);
         return;
     }
     bytesWritten = WriteToBuffer(buffer, TEST_STRING, strlen(TEST_STRING));
     if (bytesWritten < 0) {
-        printf("  WriteToBuffer Overflow: %s\n", SUCCESS);
+        printTestResult("testBufferOverflow", TRUE);
     } else {
-        printf("  WriteToBuffer Overflow: %s (%d)\n", FAILURE, bytesWritten);
+        printTestResult("testBufferOverflow", FALSE);
     }
     DestroyBuffer(buffer);
 }
 
-int main(void) {
+void runAllBufferTests(void) {
+    printf("Running Buffer Tests...\n");
     testIsBufferEmpty();
     testIsBufferFull();
     testClearBuffer();
     testReadWriteBuffer();
     testBufferOverflow();
     printf("\n");
-    return 0;
 }

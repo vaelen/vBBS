@@ -1,6 +1,3 @@
-#ifndef _VBBS_DB_H
-#define _VBBS_DB_H
-
 /*
 Copyright (c) 2025, Andrew Young
 
@@ -27,11 +24,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <vbbs/types.h>
+#include <vbbs/db.h>
+#include <vbbs/log.h>
+#include <vbbs/db/user.h>
+#include <vbbs/user.h>
 
-/** TODO: Add System 7, DOS, etc. */
-#define PATH_SEPARATOR '/'
 
-#define DB_FIELD_SEPARATOR 0x1C
-#define DB_RECORD_SEPARATOR 0x1E
-
-#endif

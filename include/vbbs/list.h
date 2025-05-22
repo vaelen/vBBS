@@ -43,5 +43,7 @@ void AddToArrayList(ArrayList *list, void *item);
 void *GetFromArrayList(ArrayList *list, int index);
 void RemoveFromArrayList(ArrayList *list, int index);
 void ClearArrayList(ArrayList *list);
+bool IsArrayListEmpty(ArrayList *list);
+int ArrayListSize(ArrayList *list);
 
 #endif /* _VBBS_LIST_H */

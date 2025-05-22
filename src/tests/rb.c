@@ -28,6 +28,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <string.h>
 
+#include "shared.h"
+
 #define TEST_STRING "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 #define SUCCESS "\033[0;32mSuccess\033[0m"
@@ -37,12 +39,13 @@ void testIsRingBufferEmpty(void) {
     RingBuffer *rb = NewRingBuffer(10);
     if (rb == NULL) {
         printf("Failed to create ring buffer\n");
+        printTestResult("testIsRingBufferEmpty", FALSE);
         return;
     }
     if (IsRingBufferEmpty(rb)) {
-        printf("       IsRingBufferEmpty: %s\n", SUCCESS);
+        printTestResult("testIsRingBufferEmpty", TRUE);
     } else {
-        printf("       IsRingBufferEmpty: %s\n", FAILURE);
+        printTestResult("testIsRingBufferEmpty", FALSE);
     }
     DestroyRingBuffer(rb);
 }
@@ -51,14 +54,15 @@ void testIsRingBufferFull(void) {
     RingBuffer *rb = NewRingBuffer(2);
     if (rb == NULL) {
         printf("Failed to create ring buffer\n");
+        printTestResult("testIsRingBufferFull", FALSE);
         return;
     }
     PushRingBuffer(rb, TEST_STRING[0]);
     PushRingBuffer(rb, TEST_STRING[1]);
     if (IsRingBufferFull(rb)) {
-        printf("        IsRingBufferFull: %s\n", SUCCESS);
+        printTestResult("testIsRingBufferFull", TRUE);
     } else {
-        printf("        IsRingBufferFull: %s\n", FAILURE);
+        printTestResult("testIsRingBufferFull", FALSE);
     }
     DestroyRingBuffer(rb);
 }
@@ -67,14 +71,15 @@ void testClearRingBuffer(void) {
     RingBuffer *rb = NewRingBuffer(strlen(TEST_STRING));
     if (rb == NULL) {
         printf("Failed to create ring buffer\n");
+        printTestResult("testClearRingBuffer", FALSE);
         return;
     }
     WriteRingBuffer(rb, (const uint8_t *)TEST_STRING, strlen(TEST_STRING));
     ClearRingBuffer(rb);
     if (IsRingBufferEmpty(rb)) {
-        printf("         ClearRingBuffer: %s\n", SUCCESS);
+        printTestResult("testClearRingBuffer", TRUE);
     } else {
-        printf("         ClearRingBuffer: %s\n", FAILURE);
+        printTestResult("testClearRingBuffer", FALSE);
     }
     DestroyRingBuffer(rb);
 }
@@ -84,14 +89,15 @@ void testReadWriteRingBuffer(void) {
     RingBuffer *rb = NewRingBuffer(strlen(TEST_STRING));
     if (rb == NULL) {
         printf("Failed to create ring buffer\n");
+        printTestResult("testReadWriteRingBuffer", FALSE);
         return;
     }
     WriteRingBuffer(rb, (const uint8_t *)TEST_STRING, strlen(TEST_STRING));
     ReadRingBuffer(rb, data, strlen(TEST_STRING));
     if (memcmp(data, TEST_STRING, strlen(TEST_STRING)) == 0) {
-        printf("    Read/WriteRingBuffer: %s\n", SUCCESS);
+        printTestResult("testReadWriteRingBuffer", TRUE);
     } else {
-        printf("    Read/WriteRingBuffer: %s\n", FAILURE);
+        printTestResult("testReadWriteRingBuffer", FALSE);
     }
     DestroyRingBuffer(rb);
 }
@@ -101,14 +107,15 @@ void testRingBufferOverflow(void) {
     RingBuffer *rb = NewRingBuffer(strlen(TEST_STRING));
     if (rb == NULL) {
         printf("Failed to create ring buffer\n");
+        printTestResult("testRingBufferOverflow", FALSE);
         return;
     }
     WriteRingBuffer(rb, (const uint8_t *)TEST_STRING, strlen(TEST_STRING));
     ReadRingBuffer(rb, data, strlen(TEST_STRING));
     if (memcmp(data, TEST_STRING, strlen(TEST_STRING)) == 0) {
-        printf("     ReadBuffer Overflow: %s\n", SUCCESS);
+        printTestResult("testRingBufferOverflow", TRUE);
     } else {
-        printf("     ReadBuffer Overflow: %s\n", FAILURE);
+        printTestResult("testRingBufferOverflow", FALSE);
     }
     DestroyRingBuffer(rb);
 }
@@ -118,6 +125,7 @@ void testRingBufferPushPop(void) {
     RingBuffer *rb = NewRingBuffer(10);
     if (rb == NULL) {
         printf("Failed to create ring buffer\n");
+        printTestResult("testRingBufferPushPop", FALSE);
         return;
     }
     PushRingBuffer(rb, TEST_STRING[0]);
@@ -126,15 +134,16 @@ void testRingBufferPushPop(void) {
     for (i = 0; i < 3; i++) {
         b = PopRingBuffer(rb);
         if (b == TEST_STRING[i]) {
-            printf("  Push/PopRingBuffer (%d): %s\n", i, SUCCESS);
+            printTestResult("testRingBufferPushPop", TRUE);
         } else {
-            printf("  Push/PopRingBuffer (%d): %s\n", i, FAILURE);
+            printTestResult("testRingBufferPushPop", FALSE);
         }
     }
     DestroyRingBuffer(rb);
 }
 
-int main(void) {
+void runAllRingBufferTests(void) {
+    printf("Running Ring Buffer Tests...\n");
     testIsRingBufferEmpty();
     testRingBufferPushPop();
     testIsRingBufferFull();
@@ -142,5 +151,4 @@ int main(void) {
     testReadWriteRingBuffer();
     testRingBufferOverflow();
     printf("\n");
-    return 0;
 }

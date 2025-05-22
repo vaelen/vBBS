@@ -63,6 +63,11 @@ void DestroyArrayList(ArrayList *list)
 
 void AddToArrayList(ArrayList *list, void *item)
 {
+    if (list == NULL || list->items == NULL)
+    {
+        return;
+    }
+
     if (list->size >= list->capacity)
     {
         list->capacity *= 2;
@@ -76,6 +81,11 @@ void AddToArrayList(ArrayList *list, void *item)
 
 void *GetFromArrayList(ArrayList *list, int index)
 {
+    if (list == NULL || list->items == NULL)
+    {
+        return NULL;
+    }
+
     if (index < 0 || index >= list->size)
     {
         return NULL;
@@ -87,6 +97,11 @@ void *GetFromArrayList(ArrayList *list, int index)
 void RemoveFromArrayList(ArrayList *list, int index)
 {
     int i;
+
+    if (list == NULL || list->items == NULL)
+    {
+        return;
+    }
 
     if (index < 0 || index >= list->size)
     {
@@ -114,8 +129,17 @@ void ClearArrayList(ArrayList *list)
 {
     int i;
 
+    if (list == NULL || list->items == NULL)
+    {
+        return;
+    }
+
     for (i = 0; i < list->size; i++)
     {
+        if (list->items[i] == NULL)
+        {
+            continue;
+        }
         if (list->destructor != NULL)
         {
             list->destructor(list->items[i]);
@@ -127,4 +151,22 @@ void ClearArrayList(ArrayList *list)
     }
 
     list->size = 0;
+}
+
+bool IsArrayListEmpty(ArrayList *list)
+{
+    if (list == NULL)
+    {
+        return TRUE;
+    }
+    return list->size == 0;
+}
+
+int ArrayListSize(ArrayList *list)
+{
+    if (list == NULL)
+    {
+        return -1;
+    }
+    return list->size;
 }
