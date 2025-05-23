@@ -64,6 +64,23 @@ MapEntry *NewMapEntry(const char *key, void *value,
     return entry;
 }
 
+static void DestroyMapEntryValue(Map *map, void *value,
+    ListItemDestructor valueDestructor)
+{
+    if (value == NULL || valueDestructor == NULL) 
+    {
+        return;
+    }
+
+    /* If the map contains a second copy of this same pointer,
+        then don't free the pointer or else we will corrupt
+        memory when we try to free the pointer a second time. */
+    if (!MapContainsValue(map, value, NULL))
+    {
+        valueDestructor(value);
+    }
+}
+
 void MapEntryDestructor(void *item)
 {
     DestroyMapEntry((MapEntry *)item);
@@ -71,12 +88,14 @@ void MapEntryDestructor(void *item)
 
 void DestroyMapEntry(MapEntry *entry)
 {
+    void *value = NULL;
+
     if (entry == NULL) 
     {
         return;
     }
 
-    if (entry->key != NULL) 
+    if (entry->key) 
     {
         free(entry->key);
         entry->key = NULL;
@@ -84,11 +103,9 @@ void DestroyMapEntry(MapEntry *entry)
 
     if (entry->value)
     {
-        if (entry->valueDestructor) 
-        {
-            entry->valueDestructor(entry->value);
-        }
+        value = entry->value;
         entry->value = NULL;
+        DestroyMapEntryValue(entry->map, value, entry->valueDestructor);
     }
     free(entry);
 }
@@ -184,16 +201,7 @@ void MapPutWithDestructor(Map *map, const char *key, void *value,
             {
                 oldValue = entry->value;
                 entry->value = NULL;
-                /* If the map contains a second copy of this same pointer,
-                    then don't free the pointer or else we will corrupt
-                    memory when we try to free the pointer a second time. */
-                if (!MapContainsValue(map, oldValue, NULL))
-                {
-                    if (entry->valueDestructor)
-                    {
-                        entry->valueDestructor(oldValue);
-                    }
-                }
+                DestroyMapEntryValue(map, oldValue, valueDestructor);
             }
             entry->value = value;
             return;
@@ -205,6 +213,7 @@ void MapPutWithDestructor(Map *map, const char *key, void *value,
     {
         return;
     }
+    entry->map = map;
     AddToArrayList(bucket, entry);
     map->size++;
 }
