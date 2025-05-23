@@ -30,18 +30,19 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/list.h>
 #include <vbbs/crc.h>
 
-typedef struct MapEntry {
-    char *key;
-    void *value;
-    ListItemDestructor valueDestructor;
-} MapEntry;
-
 typedef struct Map {
     ArrayList **buckets;
     size_t size;
     int bucketCount;
     ListItemDestructor valueDestructor;
 } Map;
+
+typedef struct MapEntry {
+    char *key;
+    void *value;
+    ListItemDestructor valueDestructor;
+    Map *map;
+} MapEntry;
 
 MapEntry *NewMapEntry(const char *key, void *value, 
     ListItemDestructor valueDestructor);

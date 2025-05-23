@@ -27,14 +27,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "shared.h"
 
 static void testNewArrayListAndDestroyArrayList(void) {
-    ArrayList *list = NewArrayList(4, NULL);
+    ArrayList *list = NewArrayList(4, free);
     int passed = (list != NULL && list->size == 0 && list->capacity >= 4);
     DestroyArrayList(list);
     printTestResult("testNewArrayListAndDestroyArrayList", passed);
 }
 
 static void testAddToArrayListAndGetFromArrayList(void) {
-    ArrayList *list = NewArrayList(2, NULL);
+    ArrayList *list = NewArrayList(2, free);
     int a = 42, b = 99;
     int *pa, *pb, passed;
     pa = (int *)malloc(sizeof(int));
@@ -53,7 +53,7 @@ static void testAddToArrayListAndGetFromArrayList(void) {
 }
 
 static void testRemoveFromArrayList(void) {
-    ArrayList *list = NewArrayList(2, NULL);
+    ArrayList *list = NewArrayList(2, free);
     int a = 1, b = 2, c = 3;
     int *pa, *pb, *pc;
     int *p0, *p1, passed;
@@ -74,8 +74,72 @@ static void testRemoveFromArrayList(void) {
     printTestResult("testRemoveFromArrayList", passed);
 }
 
+static void testRemoveFromArrayListOutOfBounds(void) {
+    ArrayList *list = NewArrayList(2, free);
+    int a = 1, b = 2, c = 3;
+    int *pa, *pb, *pc;
+    int *p0, *p1, passed;
+    pa = (int *)malloc(sizeof(int));
+    pb = (int *)malloc(sizeof(int));
+    pc = (int *)malloc(sizeof(int));
+    *pa = a;
+    *pb = b;
+    *pc = c;
+    AddToArrayList(list, pa);
+    AddToArrayList(list, pb);
+    AddToArrayList(list, pc);
+    RemoveFromArrayList(list, 3); // out of bounds
+    p0 = (int *)GetFromArrayList(list, 0);
+    p1 = (int *)GetFromArrayList(list, 1);
+    passed = (list->size == 3 && p0 && p1 && *p0 == 1 && *p1 == 2);
+    DestroyArrayList(list);
+    printTestResult("testRemoveFromArrayListOutOfBounds", passed);
+}
+
+static void testRemoveFromArrayListNegativeIndex(void) {
+    ArrayList *list = NewArrayList(2, free);
+    int a = 1, b = 2, c = 3;
+    int *pa, *pb, *pc;
+    int *p0, *p1, passed;
+    pa = (int *)malloc(sizeof(int));
+    pb = (int *)malloc(sizeof(int));
+    pc = (int *)malloc(sizeof(int));
+    *pa = a;
+    *pb = b;
+    *pc = c;
+    AddToArrayList(list, pa);
+    AddToArrayList(list, pb);
+    AddToArrayList(list, pc);
+    RemoveFromArrayList(list, -1); // negative index
+    p0 = (int *)GetFromArrayList(list, 0);
+    p1 = (int *)GetFromArrayList(list, 1);
+    passed = (list->size == 3 && p0 && p1 && *p0 == 1 && *p1 == 2);
+    DestroyArrayList(list);
+    printTestResult("testRemoveFromArrayListNegativeIndex", passed);
+}
+
+static void testRemoveFromArrayListDuplicateValues(void) {
+    ArrayList *list = NewArrayList(2, free);
+    int a = 1, b = 2;
+    int *pa, *pb;
+    int *p0, *p1, passed;
+    pa = (int *)malloc(sizeof(int));
+    pb = (int *)malloc(sizeof(int));
+    *pa = a;
+    *pb = b;
+    AddToArrayList(list, pa);
+    AddToArrayList(list, pa);
+    AddToArrayList(list, pb);
+    RemoveFromArrayList(list, 0); // remove first occurrence of pa
+    p0 = (int *)GetFromArrayList(list, 0);
+    p1 = (int *)GetFromArrayList(list, 1);
+    passed = (list->size == 2 && p0 && p1 && *p0 == a && *p1 == b);
+    DestroyArrayList(list);
+    printTestResult("testRemoveFromArrayListDuplicateValues", passed);
+}
+
 static void testClearArrayList(void) {
-    ArrayList *list = NewArrayList(2, NULL);
+    ArrayList *list = NewArrayList(2, free);
     int a = 1, b = 2, passed = 0;
     int *pa, *pb;
     pa = (int *)malloc(sizeof(int));
@@ -91,7 +155,7 @@ static void testClearArrayList(void) {
 }
 
 static void testIsArrayListEmptyAndArrayListSize(void) {
-    ArrayList *list = NewArrayList(2, NULL);
+    ArrayList *list = NewArrayList(2, free);
     int passed = IsArrayListEmpty(list) && ArrayListSize(list) == 0;
     int a = 5;
     int *pa = (int *)malloc(sizeof(int));
@@ -118,7 +182,7 @@ static void testArrayListWithDestructor(void) {
 }
 
 static void testArrayListContains(void) {
-    ArrayList *list = NewArrayList(2, NULL);
+    ArrayList *list = NewArrayList(2, free);
     int a = 1, b = 2, c = 3;
     int *pa, *pb, *pc;
     pa = (int *)malloc(sizeof(int));
@@ -142,7 +206,7 @@ static void testArrayListContains(void) {
 }
 
 static void testArrayListContainsWithComparator(void) {
-    ArrayList *list = NewArrayList(2, NULL);
+    ArrayList *list = NewArrayList(2, free);
     int a = 1, b = 2;
     int *pa, *pb;
     pa = (int *)malloc(sizeof(int));
@@ -163,6 +227,9 @@ void runAllListTests(void) {
     testArrayListContains();
     testArrayListContainsWithComparator();
     testRemoveFromArrayList();
+    testRemoveFromArrayListOutOfBounds();
+    testRemoveFromArrayListNegativeIndex();
+    testRemoveFromArrayListDuplicateValues();
     testClearArrayList();
     testIsArrayListEmptyAndArrayListSize();
     testArrayListWithDestructor();

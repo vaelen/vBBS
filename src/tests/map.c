@@ -45,13 +45,13 @@ void testNewMapEntry(void) {
 
 void testNewMap(void) {
     Map *map = NULL;
-    map = NewMap(NULL);
+    map = NewMap(free);
     printTestResult("testNewMap", map != NULL && map->size == 0);
     DestroyMap(map);
 }
 
 void testMapPutAndGet(void) {
-    Map *map = NewMap(NULL);
+    Map *map = NewMap(free);
     int a = 42, b = 99;
     int *pa, *pb;
     pa = (int *)malloc(sizeof(int));
@@ -70,7 +70,7 @@ void testMapPutAndGet(void) {
 }
 
 void testMapReplace(void) {
-    Map *map = NewMap(NULL);
+    Map *map = NewMap(free);
     int a = 42, b = 99;
     int *pa, *pb;
     pa = (int *)malloc(sizeof(int));
@@ -90,7 +90,7 @@ void testMapReplace(void) {
 }
 
 void testMapRemove(void) {
-    Map *map = NewMap(NULL);
+    Map *map = NewMap(free);
     int a = 42, b = 99;
     int *pa, *pb;
     pa = (int *)malloc(sizeof(int));
@@ -110,7 +110,7 @@ void testMapRemove(void) {
 }
 
 void testMapClear(void) {
-    Map *map = NewMap(NULL);
+    Map *map = NewMap(free);
     int a = 42, b = 99;
     int *pa, *pb;
     pa = (int *)malloc(sizeof(int));
@@ -129,7 +129,7 @@ void testMapClear(void) {
 }
 
 void testMapContainsKey(void) {
-    Map *map = NewMap(NULL);
+    Map *map = NewMap(free);
     int a = 42;
     int *pa = malloc(sizeof(int));
     *pa = a;
@@ -141,7 +141,7 @@ void testMapContainsKey(void) {
 }
 
 void testMapContainsValue(void) {
-    Map *map = NewMap(NULL);
+    Map *map = NewMap(free);
     int a = 42, b = 99;
     int *pa, *pb;
     pa = (int *)malloc(sizeof(int));

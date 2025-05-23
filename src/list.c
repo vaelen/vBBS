@@ -58,7 +58,11 @@ void DestroyArrayList(ArrayList *list)
 
     ClearArrayList(list);
 
-    free(list->items);
+    if (list->items != NULL)
+    {
+        free(list->items);
+        list->items = NULL;
+    }
     free(list);
 }
 
@@ -98,6 +102,7 @@ void *GetFromArrayList(ArrayList *list, int index)
 void RemoveFromArrayList(ArrayList *list, int index)
 {
     int i;
+    void *value;
 
     if (list == NULL || list->items == NULL)
     {
@@ -109,14 +114,7 @@ void RemoveFromArrayList(ArrayList *list, int index)
         return;
     }
 
-    if (list->destructor != NULL)
-    {
-        list->destructor(list->items[index]);
-    }
-    else
-    {
-        free(list->items[index]);
-    }
+    value = list->items[index];
 
     for (i = index; i < list->size - 1; i++)
     {
@@ -124,31 +122,29 @@ void RemoveFromArrayList(ArrayList *list, int index)
     }
 
     list->size--;
+
+    /* If there is another copy of this same pointer in the list,
+        then don't free this copy. */
+    if (!ArrayListContains(list, value, NULL) && list->destructor != NULL)
+    {
+        list->destructor(value);
+    }
+
 }
 
 void ClearArrayList(ArrayList *list)
 {
-    int i;
-
     if (list == NULL || list->items == NULL)
     {
         return;
     }
 
-    for (i = 0; i < list->size; i++)
+    while(!IsArrayListEmpty(list))
     {
-        if (list->items[i] == NULL)
-        {
-            continue;
-        }
-        if (list->destructor != NULL)
-        {
-            list->destructor(list->items[i]);
-        }
-        else
-        {
-            free(list->items[i]);
-        }
+        /* Remove the last item. 
+            We do this so that we can reuse the pointer cleanup code
+            from RemoveFromArrayList. */
+        RemoveFromArrayList(list, list->size - 1);
     }
 
     list->size = 0;
