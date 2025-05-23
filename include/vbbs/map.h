@@ -56,5 +56,8 @@ void MapPutWithDestructor(Map *map, const char *key, void *value,
 void *MapGet(const Map *map, const char *key);
 void MapRemove(Map *map, const char *key);
 void MapClear(Map *map);
+bool MapContainsKey(const Map *map, const char *key);
+bool MapContainsValue(const Map *map, const void *value,
+    ListItemComparator comparator);
 
 #endif

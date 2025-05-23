@@ -117,10 +117,51 @@ static void testArrayListWithDestructor(void) {
     printTestResult("testArrayListWithDestructor", passed);
 }
 
+static void testArrayListContains(void) {
+    ArrayList *list = NewArrayList(2, NULL);
+    int a = 1, b = 2, c = 3;
+    int *pa, *pb, *pc;
+    pa = (int *)malloc(sizeof(int));
+    pb = (int *)malloc(sizeof(int));
+    pc = (int *)malloc(sizeof(int));
+    *pa = a;
+    *pb = b;
+    *pc = c;
+    AddToArrayList(list, pa);
+    AddToArrayList(list, pb);
+    AddToArrayList(list, pc);
+    printTestResult("testArrayListContains", 
+        ArrayListContains(list, pa, NULL) && 
+        ArrayListContains(list, pb, NULL));
+    printTestResult("testArrayListDoesNotContainNull",
+        !ArrayListContains(list, NULL, NULL));
+    AddToArrayList(list, NULL);
+    printTestResult("testArrayListContainsNull",
+        ArrayListContains(list, NULL, NULL));
+    DestroyArrayList(list);
+}
+
+static void testArrayListContainsWithComparator(void) {
+    ArrayList *list = NewArrayList(2, NULL);
+    int a = 1, b = 2;
+    int *pa, *pb;
+    pa = (int *)malloc(sizeof(int));
+    pb = (int *)malloc(sizeof(int));
+    *pa = a;
+    *pb = b;
+    AddToArrayList(list, pa);
+    AddToArrayList(list, pb);
+    printTestResult("testArrayListContainsWithComparator", 
+        ArrayListContains(list, &b, IntListItemComparator));
+    DestroyArrayList(list);
+}
+
 void runAllListTests(void) {
     printf("Running List Tests...\n");
     testNewArrayListAndDestroyArrayList();
     testAddToArrayListAndGetFromArrayList();
+    testArrayListContains();
+    testArrayListContainsWithComparator();
     testRemoveFromArrayList();
     testClearArrayList();
     testIsArrayListEmptyAndArrayListSize();

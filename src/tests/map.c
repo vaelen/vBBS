@@ -70,7 +70,7 @@ void testMapPutAndGet(void) {
 }
 
 void testMapReplace(void) {
-    Map *map = NewMap(free);
+    Map *map = NewMap(NULL);
     int a = 42, b = 99;
     int *pa, *pb;
     pa = (int *)malloc(sizeof(int));
@@ -128,11 +128,47 @@ void testMapClear(void) {
     DestroyMap(map);
 }
 
+void testMapContainsKey(void) {
+    Map *map = NewMap(NULL);
+    int a = 42;
+    int *pa = malloc(sizeof(int));
+    *pa = a;
+    MapPut(map, "key1", pa);
+    printTestResult("testMapContainsKey", 
+        MapContainsKey(map, "key1") == TRUE && 
+        MapContainsKey(map, "key2") == FALSE);
+    DestroyMap(map);
+}
+
+void testMapContainsValue(void) {
+    Map *map = NewMap(NULL);
+    int a = 42, b = 99;
+    int *pa, *pb;
+    pa = (int *)malloc(sizeof(int));
+    *pa = a;
+    pb = (int *)malloc(sizeof(int));
+    *pb = b;
+    MapPut(map, "key1", pa);
+    MapPut(map, "key2", pb);
+    printTestResult("testMapContainsValue", 
+        MapContainsValue(map, pa, NULL));
+    printTestResult("testMapContainsValueWithComparator", 
+        MapContainsValue(map, &b, IntListItemComparator));
+    printTestResult("testMapDoesNotContainNullValue",
+        !MapContainsValue(map, NULL, NULL));
+    MapPut(map, "key3", NULL);
+    printTestResult("testMapContainsNullValue",
+        MapContainsValue(map, NULL, NULL));
+    DestroyMap(map);
+}
+
 void runAllMapTests(void) {
     printf("Running Map Tests...\n");
     testNewMapEntry();
     testNewMap();
     testMapPutAndGet();
+    testMapContainsKey();
+    testMapContainsValue();
     testMapReplace();
     testMapRemove();
     testMapClear();

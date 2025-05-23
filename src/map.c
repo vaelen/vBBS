@@ -88,10 +88,6 @@ void DestroyMapEntry(MapEntry *entry)
         {
             entry->valueDestructor(entry->value);
         }
-        else 
-        {
-            free(entry->value);
-        }
         entry->value = NULL;
     }
     free(entry);
@@ -109,7 +105,7 @@ Map *NewMap(ListItemDestructor valueDestructor)
     map->valueDestructor = valueDestructor;
 
     /** TODO: Make map self-balancing with fewer starting buckets. */
-    map->bucketCount = 32;
+    map->bucketCount = 256;
     map->buckets = malloc(sizeof(ArrayList *) * map->bucketCount);
     if (!map->buckets) 
     {
@@ -169,6 +165,7 @@ void MapPutWithDestructor(Map *map, const char *key, void *value,
     int bucketIndex;
     ArrayList *bucket = NULL;
     MapEntry *entry = NULL;
+    void *oldValue = NULL;
 
     if (!map || !key) 
     {
@@ -185,8 +182,18 @@ void MapPutWithDestructor(Map *map, const char *key, void *value,
         {
             if (entry->value)
             {
-                entry->valueDestructor ? entry->valueDestructor(entry->value) 
-                : free(entry->value);
+                oldValue = entry->value;
+                entry->value = NULL;
+                /* If the map contains a second copy of this same pointer,
+                    then don't free the pointer or else we will corrupt
+                    memory when we try to free the pointer a second time. */
+                if (!MapContainsValue(map, oldValue, NULL))
+                {
+                    if (entry->valueDestructor)
+                    {
+                        entry->valueDestructor(oldValue);
+                    }
+                }
             }
             entry->value = value;
             return;
@@ -250,7 +257,6 @@ void MapRemove(Map *map, const char *key)
         if (entry && strcmp(entry->key, key) == 0) 
         {
             RemoveFromArrayList(bucket, i);
-            DestroyMapEntry(entry);
             map->size--;
             return;
         }
@@ -273,4 +279,64 @@ void MapClear(Map *map)
         ClearArrayList(bucket);
     }
     map->size = 0;
+}
+
+bool MapContainsKey(const Map *map, const char *key)
+{
+    int i;
+    int bucketIndex;
+    ArrayList *bucket = NULL;
+    MapEntry *entry = NULL;
+
+    if (!map || !key) 
+    {
+        return FALSE;
+    }
+
+    bucketIndex = Checksum(key, strlen(key)) % map->bucketCount;
+    bucket = map->buckets[bucketIndex];
+
+    for (i = 0; i < bucket->size; i++) 
+    {
+        entry = (MapEntry *)GetFromArrayList(bucket, i);
+        if (entry && strcmp(entry->key, key) == 0) 
+        {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+bool MapContainsValue(const Map *map, const void *value,
+    ListItemComparator comparator)
+{
+    int i, j;
+    ArrayList *bucket = NULL;
+    MapEntry *entry = NULL;
+
+    if (!map) 
+    {
+        return FALSE;
+    }
+
+    if (comparator == NULL) 
+    {
+        comparator = DefaultListItemComparator;
+    }
+
+    for (i = 0; i < map->bucketCount; i++) 
+    {
+        bucket = map->buckets[i];
+        for (j = 0; j < bucket->size; j++) 
+        {
+            entry = (MapEntry *)GetFromArrayList(bucket, j);
+            if (entry && comparator(entry->value, value)) 
+            {
+                return TRUE;
+            }
+        }
+    }
+
+    return FALSE;
 }
