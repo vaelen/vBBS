@@ -44,10 +44,10 @@ void printTestResult(const char *test, bool passed) {
 
 int main(void)
 {
-    runAllListTests();
     runAllBufferTests();
     runAllCRCTests();
     runAllRingBufferTests();
+    runAllListTests();
     runAllMapTests();
     printf("Test Results: %d passed, %d failed\n", test_passed, test_failed);
     return 0;

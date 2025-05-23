@@ -28,6 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/types.h>
 
 typedef void (*ListItemDestructor)(void *item);
+typedef bool (*ListItemComparator)(const void *item1, const void *item2);
 
 typedef struct ArrayList
 {
@@ -45,5 +46,23 @@ void RemoveFromArrayList(ArrayList *list, int index);
 void ClearArrayList(ArrayList *list);
 bool IsArrayListEmpty(ArrayList *list);
 int ArrayListSize(ArrayList *list);
+/** 
+ * Check for the existance of a given value in the list.
+ * If comparator is null, it will compare pointers. 
+ */
+bool ArrayListContains(const ArrayList *list, const void *item, 
+    ListItemComparator comparator);
+
+bool DefaultListItemComparator(const void *item1, const void *item2);
+bool IntListItemComparator(const void *item1, const void *item2);
+bool StringListItemComparator(const void *item1, const void *item2);
+bool StringListItemComparatorIgnoreCase(const void *item1, const void *item2);
+bool UInt8ListItemComparator(const void *item1, const void *item2);
+bool UInt16ListItemComparator(const void *item1, const void *item2);
+bool UInt32ListItemComparator(const void *item1, const void *item2);
+bool Int8ListItemComparator(const void *item1, const void *item2);
+bool Int16ListItemComparator(const void *item1, const void *item2);
+bool Int32ListItemComparator(const void *item1, const void *item2);
+
 
 #endif /* _VBBS_LIST_H */
