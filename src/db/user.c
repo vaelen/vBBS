@@ -174,11 +174,10 @@ bool SaveUserDB(void)
 bool _SaveUserDB(UserDB *db)
 {
    FILE *file;
-   ArrayList *bucket;
-   int i, j;
+   int i;
    User *user;
 
-   if (db == NULL)
+   if (db == NULL || db->filename == NULL || db->users == NULL)
    {
       return FALSE;
    }
@@ -196,23 +195,17 @@ bool _SaveUserDB(UserDB *db)
    fprintf(file, "%u\n", db->nextUserID);
 
    /* Write users to the file */
-   for (i = 0; i < db->userIDs->bucketCount; i++)
+   for (i = 0; i < db->users->size; i++)
    {
-      bucket = db->userIDs->buckets[i];
-      for (j = 0; j < bucket->size; j++)
+      user = (User *) GetFromArrayList(db->users, i);
+      if (user == NULL)
       {
-         user = (User *) GetFromArrayList(bucket, j);
-         if (user == NULL)
-         {
-            continue;
-         }
-         fprintf(stderr, "%u %s %s %s %d %lu\n", user->userID, user->username,
-                  user->pwHash, user->email, user->userType, 
-                  (unsigned long)user->lastSeen);
-         fprintf(file, "%u %s %s %s %d %lu\n", user->userID, user->username,
-                  user->pwHash, user->email, user->userType, 
-                  (unsigned long)user->lastSeen);
+         continue;
       }
+      Debug("Saving User: %u %s %s %s %d %ld\n", user->userID, user->username,
+               user->pwHash, user->email, user->userType, user->lastSeen);
+      fprintf(file, "%u %s %s %s %d %lu\n", user->userID, user->username,
+               user->pwHash, user->email, user->userType, user->lastSeen);
    }
 
    fflush(file);

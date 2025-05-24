@@ -36,7 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 static char *months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
                          "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
-void FormatTime(char *buffer, size_t bufferSize, uint32_t time)
+void FormatTime(char *buffer, size_t bufferSize, time_t time)
 {
     struct tm *tm;
     if (buffer == NULL || bufferSize < 21)
@@ -44,7 +44,7 @@ void FormatTime(char *buffer, size_t bufferSize, uint32_t time)
         return;
     }
 
-    tm = localtime((time_t *)&time);
+    tm = localtime(&time);
     sprintf(buffer, TIME_FORMAT,
              tm->tm_mday, months[tm->tm_mon], tm->tm_year + 1900,
              tm->tm_hour, tm->tm_min, tm->tm_sec);

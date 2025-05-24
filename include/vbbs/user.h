@@ -27,6 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <vbbs/types.h>
+#include <time.h>
 
 typedef enum
 {
@@ -41,7 +42,7 @@ typedef struct
     char pwHash[41];
     char email[41];
     UserType userType;
-    uint32_t lastSeen;
+    time_t lastSeen;
 } User;
 
 User *NewUser(void);

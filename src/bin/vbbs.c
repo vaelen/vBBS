@@ -229,7 +229,8 @@ int main(int argc, char *argv[])
 #ifdef _POSIX_VERSION
     int fd, max_fd, i;
     fd_set read_fds, write_fds;
-    struct timeval *timeout = malloc(sizeof(struct timeval));
+    struct timeval *timeout = NULL;
+    /* struct timeval *timeout = malloc(sizeof(struct timeval)); */
 
     /** Set stdin and stdout to non-blocking mode */
     fcntl(fileno(stdin), F_SETFL, O_NONBLOCK);
