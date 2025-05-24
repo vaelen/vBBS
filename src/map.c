@@ -132,7 +132,7 @@ Map *NewMap(ListItemDestructor valueDestructor)
 
     for (i = 0; i < map->bucketCount; i++) 
     {
-        map->buckets[i] = NewArrayList(5, MapEntryDestructor);
+        map->buckets[i] = NewArrayList(1, MapEntryDestructor);
         if (!map->buckets[i]) 
         {
             for (j = 0; j < i; j++) 
@@ -170,6 +170,7 @@ void DestroyMap(Map *map)
     free(map);
 }
 
+/** The key will be copied. */
 void MapPut(Map *map, const char *key, void *value)
 {
     MapPutWithDestructor(map, key, value, map->valueDestructor);

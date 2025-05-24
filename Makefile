@@ -4,7 +4,8 @@ CFLAGS = -Iinclude -Wall -Wextra -pedantic -std=gnu89 -g
 LDFLAGS = 
 
 OBJS = 	$(patsubst src/%.c,obj/%.o,$(wildcard src/*.c)) \
-		$(patsubst src/conn/%.c,obj/conn/%.o,$(wildcard src/conn/*.c))
+		$(patsubst src/conn/%.c,obj/conn/%.o,$(wildcard src/conn/*.c)) \
+		$(patsubst src/db/%.c,obj/db/%.o,$(wildcard src/db/*.c))
 
 TESTS = $(patsubst src/tests/%.c,obj/tests/%.o,$(wildcard src/tests/*.c))
 
@@ -17,9 +18,10 @@ tests: test
 
 obj:
 	mkdir -p obj
+	mkdir -p obj/bin
+	mkdir -p obj/db
 	mkdir -p obj/conn
 	mkdir -p obj/tests
-	mkdir -p obj/bin
 
 bin:
 	mkdir -p bin
@@ -31,6 +33,9 @@ bin/tests: $(TESTS) $(OBJS) bin obj/bin/tests.o
 	$(LD) -o bin/tests obj/bin/tests.o $(TESTS) $(OBJS) $(CFLAGS)
 
 obj/%.o : src/%.c include/vbbs/%.h obj
+	$(CC) -c $(CFLAGS) $< -o $@
+
+obj/db/%.o : src/db/%.c include/vbbs/db/%.h obj
 	$(CC) -c $(CFLAGS) $< -o $@
 
 obj/conn/%.o : src/conn/%.c src/conn/%/*.c include/vbbs/conn/%.h obj

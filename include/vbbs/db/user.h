@@ -29,8 +29,43 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/db.h>
 #include <vbbs/log.h>
 #include <vbbs/user.h>
+#include <vbbs/list.h>
+#include <vbbs/map.h>
 
-FILE *OpenUserDB();
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
+#define USER_DB_FILE "users.db"
+
+typedef struct UserDB
+{
+   char *filename;
+   uint32_t nextUserID;
+   ArrayList *users;
+   Map *userIDs;
+   Map *usernames;
+} UserDB;
+
+extern UserDB *userDB;
+
+bool LoadUserDB(void);
+bool SaveUserDB(void);
+void AddUser(User *user);
+void RemoveUser(uint32_t userID);
+User *GetUserByID(uint32_t userID);
+User *GetUserByUsername(const char *username);
+int GetUserCount(void);
+
+UserDB *NewUserDB(const char *filename);
+void DestroyUserDB(UserDB *db);
+
+bool _LoadUserDB(UserDB *db);
+bool _SaveUserDB(UserDB *db);
+void _AddUser(UserDB *db, User *user);
+void _RemoveUser(UserDB *db, uint32_t userID);
+User *_GetUserByID(UserDB *db, uint32_t userID);
+User *_GetUserByUsername(UserDB *db, const char *username);
+int _GetUserCount(UserDB *db);
 
 #endif

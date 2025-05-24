@@ -38,6 +38,10 @@ typedef struct ArrayList
     ListItemDestructor destructor;
 } ArrayList;
 
+/** 
+ * If no destructor is provided, the calling code must handle memory
+ * management of the items in the list. 
+ */
 ArrayList *NewArrayList(int initialCapacity, ListItemDestructor destructor);
 void DestroyArrayList(ArrayList *list);
 void AddToArrayList(ArrayList *list, void *item);

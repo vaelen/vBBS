@@ -41,9 +41,12 @@ typedef void (*EventHandler)(Session *session);
 struct Session {
    Connection *conn;
    uint32_t sessionID;
-   User user;
+   User *user;
    EventHandler eventHandler;
+   EventHandler nextEventHandler;
    uint8_t loginAttempts;
+   char tempBuffer[256];
+   bool isNewUser;
 };
 
 Session* NewSession(Connection *conn);

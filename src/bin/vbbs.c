@@ -229,7 +229,7 @@ int main(int argc, char *argv[])
 #ifdef _POSIX_VERSION
     int fd, max_fd, i;
     fd_set read_fds, write_fds;
-    struct timeval *timeout = NULL;
+    struct timeval *timeout = malloc(sizeof(struct timeval));
 
     /** Set stdin and stdout to non-blocking mode */
     fcntl(fileno(stdin), F_SETFL, O_NONBLOCK);
@@ -247,6 +247,10 @@ int main(int argc, char *argv[])
     Info("Starting %s", VBBS_VERSION_STRING);
 
     signal(SIGINT, SignalHandler);
+
+    LoadUserDB() ? 
+        Info("User database loaded successfully.") : 
+        Error("Failed to load user database: %s", USER_DB_FILE);
 
     sessions = NewArrayList(32, SessionDestructor);
 
@@ -314,7 +318,7 @@ int main(int argc, char *argv[])
         /** Set timeout for select() to 5 seconds */
         if (timeout != NULL)
         {
-            timeout->tv_sec = 5;
+            timeout->tv_sec = 1;
             timeout->tv_usec = 0;
         }   
 
@@ -392,6 +396,13 @@ perror("select() is not supported on this platform.");
     Info("Shutting down %s", VBBS_VERSION_STRING);
 
     CloseLog();
+
+#ifdef _POSIX_VERSION
+    if (timeout != NULL)
+    {
+        free(timeout);
+    }
+#endif
 
     return EXIT_SUCCESS;
 }

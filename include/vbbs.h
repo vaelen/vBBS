@@ -44,7 +44,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/session.h>
 #include <vbbs/sha1.h>
 #include <vbbs/terminal.h>
+#include <vbbs/time.h>
 #include <vbbs/user.h>
+
+#include <vbbs/db/user.h>
 
 #include <vbbs/conn/console.h>
 #include <vbbs/conn/modem.h>
