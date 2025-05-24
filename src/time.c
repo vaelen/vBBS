@@ -1,6 +1,3 @@
-#ifndef VBBS_MAP_H
-#define VBBS_MAP_H
-
 /*
 Copyright (c) 2025, Andrew Young
 
@@ -27,46 +24,29 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <vbbs/types.h>
-#include <vbbs/list.h>
-#include <vbbs/crc.h>
+#include <vbbs/time.h>
+#include <vbbs/log.h>
+#include <time.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
-typedef struct Map {
-    ArrayList **buckets;
-    size_t size;
-    int bucketCount;
-    ListItemDestructor valueDestructor;
-} Map;
+#define TIME_FORMAT "%02d %3s %04d %02d:%02d:%02d"
 
-typedef struct MapEntry {
-    char *key;
-    void *value;
-    ListItemDestructor valueDestructor;
-    Map *map;
-} MapEntry;
+static char *months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 
-/**
- * If no destructor is provided, the calling code must handle memory
- * management of the items in the map.
- */
-MapEntry *NewMapEntry(const char *key, void *value, 
-    ListItemDestructor valueDestructor);
-void MapEntryDestructor(void *item);
-void DestroyMapEntry(MapEntry *entry);
+void FormatTime(char *buffer, size_t bufferSize, uint32_t time)
+{
+    struct tm *tm;
+    if (buffer == NULL || bufferSize < 21)
+    {
+        return;
+    }
 
-/**
- * If no destructor is provided, the calling code must handle memory
- * management of the items in the map.
- */
-Map *NewMap(ListItemDestructor valueDestructor);
-void DestroyMap(Map *map);
-void MapPut(Map *map, const char *key, void *value);
-void MapPutWithDestructor(Map *map, const char *key, void *value, 
-    ListItemDestructor valueDestructor);
-void *MapGet(const Map *map, const char *key);
-void MapRemove(Map *map, const char *key);
-void MapClear(Map *map);
-bool MapContainsKey(const Map *map, const char *key);
-bool MapContainsValue(const Map *map, const void *value,
-    ListItemComparator comparator);
-
-#endif
+    tm = localtime((time_t *)&time);
+    sprintf(buffer, TIME_FORMAT,
+             tm->tm_mday, months[tm->tm_mon], tm->tm_year + 1900,
+             tm->tm_hour, tm->tm_min, tm->tm_sec);
+    buffer[bufferSize - 1] = '\0';
+}

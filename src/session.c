@@ -25,18 +25,24 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <vbbs/types.h>
 
-#include <stdio.h>
-#include <string.h>
 #include <vbbs/session.h>
 #include <vbbs/log.h>
 #include <vbbs/conn.h>
 #include <vbbs/user.h>
 #include <vbbs/terminal.h>
+#include <vbbs/time.h>
+#include <vbbs/db.h>
+#include <vbbs/db/user.h>
 
 #include <vbbs/conn/telnet.h>
 #include <vbbs/conn/console.h>
 #include <vbbs/conn/serial.h>
 #include <vbbs/conn/modem.h>
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
 
 #define MAX_LOGIN_ATTEMPTS 3
 
@@ -50,6 +56,14 @@ void PromptPassword(Session *session);
 void CheckPassword(Session *session);
 void LoggedIn(Session *session);
 void Logout(Session *session);
+void NewUserPromptUserName(Session *session);
+void NewUserCheckUserName(Session *session);
+void NewUserPromptPassword(Session *session);
+void NewUserPromptPasswordConfirm(Session *session);
+void NewUserCheckPassword(Session *session);
+void NewUserPromptEmail(Session *session);
+void NewUserSubmit(Session *session);
+void ListUsers(Session *session);
 
 Session* NewSession(Connection *conn)
 {
@@ -61,9 +75,11 @@ Session* NewSession(Connection *conn)
     }
     session->sessionID = ++sessionIDCounter;
     session->conn = conn;
-    InitUser(&session->user);
+    session->user = NULL;
     session->eventHandler = NULL;
     session->loginAttempts = 0;
+    session->isNewUser = FALSE;
+    memset(session->tempBuffer, 0, sizeof(session->tempBuffer));
 
     if (conn != NULL)
     {
@@ -142,6 +158,14 @@ void DestroySession(Session *session)
         session->conn = NULL;
     }
 
+    if (session->isNewUser && session->user != NULL)
+    {
+        /* We have to clean up this memory, because it hasn't been
+            added to ther UserDB yet and thus we own it. */
+        DestroyUser(session->user);
+        session->user = NULL;
+    }
+
     free(session);
 }
 
@@ -214,6 +238,7 @@ void PromptPassword(Session *session)
 {
     Connection *conn;
     int maxLength;
+    User *user;
     
     if (session == NULL || session->conn == NULL)
     {
@@ -221,12 +246,28 @@ void PromptPassword(Session *session)
     }
     conn = session->conn;
 
-    maxLength = sizeof(session->user.username) - 1;
+    maxLength = sizeof(user->username) - 1;
 
     if (IsNextLineReady(conn->inputBuffer))
     {
-        strncpy(session->user.username, conn->inputBuffer->nextLine, maxLength);
-        session->user.username[maxLength] = '\0';
+        if (strcmp(conn->inputBuffer->nextLine, "new") == 0)
+        {
+            WriteToConnection(conn, "New user registration.\n");
+            ClearNextLine(conn->inputBuffer);
+            session->user = NewUser();
+            if (session->user == NULL)
+            {
+                Error("Failed to create new user.");
+                WriteToConnection(conn, "System error.\n");
+                Disconnect(conn, FALSE);
+                return;
+            }
+            session->isNewUser = TRUE;
+            NewUserPromptUserName(session);
+            return;
+        }
+        strncpy(session->tempBuffer, conn->inputBuffer->nextLine, maxLength);
+        session->tempBuffer[maxLength] = '\0';
         ClearNextLine(conn->inputBuffer);;
         WriteToConnection(conn, SET_CONCEAL_OFF);
         WriteToConnection(conn, "Password => ");
@@ -238,10 +279,8 @@ void PromptPassword(Session *session)
 void CheckPassword(Session *session)
 {
     Connection *conn;
-    User user;
+    User *user;
     
-    InitUser(&user);
-
     if (session == NULL || session->conn == NULL)
     {
         return;
@@ -251,14 +290,14 @@ void CheckPassword(Session *session)
     if (IsNextLineReady(conn->inputBuffer))
     {
 
-        InitUser(&user);
         /** TODO: Look up user by username in user database. */
-
-        if (!AuthenticateUser(&user, session->user.username, 
+        user = GetUserByUsername(session->tempBuffer);
+        WriteToConnection(conn, SET_CONCEAL_OFF);
+        if (user == NULL || !AuthenticateUser(user, session->tempBuffer, 
             conn->inputBuffer->nextLine))
         {
             Info("[%d] Authentication failure for user %s.", 
-                session->sessionID, session->user.username);
+                session->sessionID, session->tempBuffer);
             WriteToConnection(conn, "Authentication failed.\n");
             ClearNextLine(conn->inputBuffer);
             session->loginAttempts++;
@@ -277,9 +316,10 @@ void CheckPassword(Session *session)
         }
         else
         {
+            session->user = user;
             conn->connectionStatus = AUTHENTICATED;
             Info("[%d] User %s logged in successfully.", 
-                session->sessionID, session->user.username);
+                session->sessionID, session->user->username);
             ClearNextLine(conn->inputBuffer);
             LoggedIn(session);
         }
@@ -296,12 +336,18 @@ void LoggedIn(Session *session)
     }
     conn = session->conn;
 
+    session->user->lastSeen = time(NULL);
+    SaveUserDB();
+
     WriteToConnection(conn, SET_CONCEAL_OFF);
     WriteToConnection(conn, RESET_MODES);
-    WriteToConnection(conn, "Welcome %s!\n", session->user.username);
+    WriteToConnection(conn, "Welcome %s!\n", session->user->username);
     WriteToConnection(conn, "You are now logged in.\n");
 
-    session->eventHandler = Logout;
+    session->eventHandler = ListUsers;
+    session->nextEventHandler = Logout;
+
+    ListUsers(session);
 }
 
 void Logout(Session *session)
@@ -312,7 +358,204 @@ void Logout(Session *session)
         return;
     }
     conn = session->conn;
+    WriteToConnection(conn, SET_CONCEAL_OFF);
+    WriteToConnection(conn, RESET_MODES);
     WriteToConnection(conn, "Goodbye!\n");
     session->eventHandler = NULL;
     Disconnect(conn, FALSE);
+}
+
+void NewUserPromptUserName(Session *session)
+{
+    Connection *conn;
+    
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    conn = session->conn;
+
+    WriteToConnection(conn, "Enter your username: ");
+    session->eventHandler = NewUserCheckUserName;
+}
+
+void NewUserCheckUserName(Session *session)
+{
+    Connection *conn;
+    int maxLength;
+    
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    conn = session->conn;
+
+    maxLength = sizeof(session->tempBuffer) - 1;
+
+    if (IsNextLineReady(conn->inputBuffer))
+    {
+        strncpy(session->tempBuffer, conn->inputBuffer->nextLine, maxLength);
+        session->tempBuffer[maxLength] = '\0';
+        ClearNextLine(conn->inputBuffer);
+
+        if (GetUserByUsername(session->tempBuffer) != NULL)
+        {
+            WriteToConnection(conn, "Username already exists.\n");
+            NewUserPromptUserName(session);
+            return;
+        }
+
+        strncpy(session->user->username, session->tempBuffer, 
+            sizeof(session->user->username));
+        session->user->username[sizeof(session->user->username) - 1] = '\0';
+
+        NewUserPromptPassword(session);
+    }
+}
+
+void NewUserPromptPassword(Session *session)
+{
+    Connection *conn;
+    
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    conn = session->conn;
+
+    WriteToConnection(conn, SET_CONCEAL_OFF);
+    WriteToConnection(conn, "Enter a password: ");
+    WriteToConnection(conn, SET_CONCEAL);
+    session->eventHandler = NewUserPromptPasswordConfirm;
+}
+
+void NewUserPromptPasswordConfirm(Session *session)
+{
+    Connection *conn;
+    int maxLength;
+    
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    conn = session->conn;
+
+    maxLength = sizeof(session->tempBuffer) - 1;
+
+    if (IsNextLineReady(conn->inputBuffer))
+    {
+        strncpy(session->tempBuffer, conn->inputBuffer->nextLine, maxLength);
+        session->tempBuffer[maxLength] = '\0';
+        ClearNextLine(conn->inputBuffer);
+        WriteToConnection(conn, SET_CONCEAL_OFF);
+        WriteToConnection(conn, "Confirm your password: ");
+        WriteToConnection(conn, SET_CONCEAL);
+        session->eventHandler = NewUserCheckPassword;
+    }
+}
+
+void NewUserCheckPassword(Session *session)
+{
+    Connection *conn;
+    
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    conn = session->conn;
+
+    if (IsNextLineReady(conn->inputBuffer))
+    {
+        WriteToConnection(conn, SET_CONCEAL_OFF);
+        if (strcmp(session->tempBuffer, conn->inputBuffer->nextLine) != 0)
+        {
+            WriteToConnection(conn, "Passwords do not match.\n");
+            ClearNextLine(conn->inputBuffer);
+            NewUserPromptPassword(session);
+            return;
+        }
+        ClearNextLine(conn->inputBuffer);
+        ChangePassword(session->user, session->tempBuffer);
+        NewUserPromptEmail(session);
+    }
+}
+
+void NewUserPromptEmail(Session *session)
+{
+    Connection *conn;
+    
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    conn = session->conn;
+
+    WriteToConnection(conn, "Enter your email address: ");
+    session->eventHandler = NewUserSubmit;
+}
+
+void NewUserSubmit(Session *session)
+{
+    Connection *conn;
+    
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    conn = session->conn;
+
+    if (IsNextLineReady(conn->inputBuffer))
+    {
+        strncpy(session->user->email, conn->inputBuffer->nextLine, 
+            sizeof(session->user->email));
+        session->user->email[sizeof(session->user->email) - 1] = '\0';
+        session->user->userType = REGULAR_USER;
+
+        AddUser(session->user);
+        session->isNewUser = FALSE;
+        SaveUserDB();
+        WriteToConnection(conn, "New user %s created successfully.\n", 
+            session->user->username);
+
+        conn->connectionStatus = AUTHENTICATED;
+        
+        ClearNextLine(conn->inputBuffer);
+        LoggedIn(session);
+    }
+}
+
+void ListUsers(Session *session)
+{
+    Connection *conn;
+    User *user;
+    int i;
+    char *userListFormat;
+    char lastSeen[21];
+    
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    conn = session->conn;
+
+    userListFormat = "%18s %40s %20s\n";
+
+    WriteToConnection(conn, "User List:\n");
+    WriteToConnection(conn, "------------------ ");
+    WriteToConnection(conn, "---------------------------------------- ");
+    WriteToConnection(conn, "--------------------\n");
+    WriteToConnection(conn, userListFormat, "Username", "Email", "Last Seen");
+    for (i = 0; i < userDB->users->size; i++)
+    {
+        user = (User *)GetFromArrayList(userDB->users, i);
+        if (user != NULL)
+        {
+            FormatTime(lastSeen, sizeof(lastSeen), user->lastSeen);
+            WriteToConnection(conn, userListFormat, user->username, 
+                user->email, lastSeen);
+            Debug("User: %s, email: %s", 
+                user->username, user->email);
+        }
+    }
+    session->eventHandler = session->nextEventHandler;
 }

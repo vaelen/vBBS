@@ -37,14 +37,18 @@ typedef enum
 typedef struct
 {
     uint32_t userID;
-    char username[50];
+    char username[21];
     char pwHash[41];
-    char email[100];
+    char email[41];
     UserType userType;
+    uint32_t lastSeen;
 } User;
 
-void InitUser(User *user);
+User *NewUser(void);
+void DestroyUser(User *user);
+User *CopyUser(const User *src);
 
 bool AuthenticateUser(User *user, const char *username, const char *password);
+bool ChangePassword(User *user, const char *newPassword);
 
 #endif

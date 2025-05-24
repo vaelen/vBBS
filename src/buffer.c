@@ -87,12 +87,12 @@ int WriteToBuffer(Buffer *buffer, const char *data, int length)
 {
     if (buffer->length + length > buffer->maxSize)
     {
-        return -1; // Buffer overflow
+        return -1; /* Buffer overflow */
     }
     memcpy(buffer->tail, data, length);
     buffer->tail += length;
     buffer->length += length;
-    return length; // Success
+    return length; /* Success */
 }
 
 int WriteStringToBuffer(Buffer *buffer, const char *data)
@@ -172,7 +172,7 @@ int ReadDataFromStream(InputBuffer *buffer, FILE *in)
     int bytesToRead = BufferRemaining(buffer->buffer);
     if (bytesToRead <= 0)
     {
-        return 0; // Buffer is full
+        return 0; /* Buffer is full */
     }
 
     bytesRead = fread(buffer->buffer->tail, 1, bytesToRead, in);
@@ -208,7 +208,7 @@ bool IsNextLineReady(InputBuffer *buffer)
                 buffer->nextLine[i - 1] = '\0';
             }
 
-            // Check for a carriage return after the line feed */
+            /* Check for a carriage return after the line feed */
             if (buffer->buffer->bytes[i + 1] == '\r')
             {
                 /* This causes the memmove to remove the carriage return*/

@@ -66,7 +66,7 @@ static void testRemoveFromArrayList(void) {
     AddToArrayList(list, pa);
     AddToArrayList(list, pb);
     AddToArrayList(list, pc);
-    RemoveFromArrayList(list, 1); // remove b
+    RemoveFromArrayList(list, 1); /* remove b */
     p0 = (int *)GetFromArrayList(list, 0);
     p1 = (int *)GetFromArrayList(list, 1);
     passed = (list->size == 2 && p0 && p1 && *p0 == 1 && *p1 == 3);
@@ -88,7 +88,7 @@ static void testRemoveFromArrayListOutOfBounds(void) {
     AddToArrayList(list, pa);
     AddToArrayList(list, pb);
     AddToArrayList(list, pc);
-    RemoveFromArrayList(list, 3); // out of bounds
+    RemoveFromArrayList(list, 3); /* out of bounds */
     p0 = (int *)GetFromArrayList(list, 0);
     p1 = (int *)GetFromArrayList(list, 1);
     passed = (list->size == 3 && p0 && p1 && *p0 == 1 && *p1 == 2);
@@ -110,7 +110,7 @@ static void testRemoveFromArrayListNegativeIndex(void) {
     AddToArrayList(list, pa);
     AddToArrayList(list, pb);
     AddToArrayList(list, pc);
-    RemoveFromArrayList(list, -1); // negative index
+    RemoveFromArrayList(list, -1); /* negative index */
     p0 = (int *)GetFromArrayList(list, 0);
     p1 = (int *)GetFromArrayList(list, 1);
     passed = (list->size == 3 && p0 && p1 && *p0 == 1 && *p1 == 2);
@@ -130,7 +130,7 @@ static void testRemoveFromArrayListDuplicateValues(void) {
     AddToArrayList(list, pa);
     AddToArrayList(list, pa);
     AddToArrayList(list, pb);
-    RemoveFromArrayList(list, 0); // remove first occurrence of pa
+    RemoveFromArrayList(list, 0); /* remove first occurrence of pa */
     p0 = (int *)GetFromArrayList(list, 0);
     p1 = (int *)GetFromArrayList(list, 1);
     passed = (list->size == 2 && p0 && p1 && *p0 == a && *p1 == b);

@@ -31,13 +31,44 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/sha1.h>
 #include <vbbs/log.h>
 
-void InitUser(User *user)
+User *NewUser(void)
 {
+    User *user = (User *) malloc(sizeof(User));
+    if (user == NULL)
+    {
+        return NULL;
+    }
     user->userID = 0;
-    strcpy(user->username, "guest");
-    strcpy(user->pwHash, "35675E68F4B5AF7B995D9205AD0FC43842F16450");
-    strcpy(user->email, "user@example.com");
+    memset(user->username, 0, sizeof(user->username));
+    memset(user->pwHash, 0, sizeof(user->pwHash));
+    memset(user->email, 0, sizeof(user->email));
+    user->lastSeen = 0;
     user->userType = REGULAR_USER;
+    return user;
+}
+
+void DestroyUser(User *user)
+{
+    if (user == NULL)
+    {
+        return;
+    }
+    free(user);
+}
+
+User *CopyUser(const User *src)
+{
+    User *user = (User *) malloc(sizeof(User));
+    if (user == NULL)
+    {
+        return NULL;
+    }
+    user->userID = src->userID;
+    strcpy(user->username, src->username);
+    strcpy(user->pwHash, src->pwHash);
+    strcpy(user->email, src->email);
+    user->userType = src->userType;
+    return user;
 }
 
 bool AuthenticateUser(User *user, const char *username, const char *password)
@@ -54,12 +85,12 @@ bool AuthenticateUser(User *user, const char *username, const char *password)
         return FALSE;
     }
 
-    // Hash the password
+    /* Hash the password */
     SHA1Init(&sha);
     SHA1Update(&sha, (uint8_t *) password, strlen(password));
     SHA1Final(hash, &sha);
 
-    // Convert hash to hex string
+    /* Convert hash to hex string */
     for (i = 0; i < 20; i++)
     {
         sprintf(&hashString[i * 2], "%02X", hash[i]);
@@ -76,7 +107,7 @@ bool AuthenticateUser(User *user, const char *username, const char *password)
     return FALSE;
 }
 
-bool changePassword(User *user, const char *newPassword)
+bool ChangePassword(User *user, const char *newPassword)
 {
     int i;
     SHA1_CTX sha;
@@ -89,12 +120,12 @@ bool changePassword(User *user, const char *newPassword)
         return FALSE;
     }
 
-    // Hash the password
+    /* Hash the password */
     SHA1Init(&sha);
     SHA1Update(&sha, (uint8_t *) newPassword, strlen(newPassword));
     SHA1Final(hash, &sha);
 
-    // Convert hash to hex string
+    /* Convert hash to hex string */
     for (i = 0; i < 20; i++)
     { 
         sprintf(&hashString[i * 2], "%02X", hash[i]);

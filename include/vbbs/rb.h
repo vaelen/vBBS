@@ -34,11 +34,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 typedef struct
 {
-    uint8_t *buffer;     // Pointer to the buffer
-    int head;         // Index of the head of the buffer
-    int tail;         // Index of the tail of the buffer
-    int size;         // Current size of the buffer
-    int maxSize;      // Maximum size of the buffer
+    uint8_t *buffer;     /* Pointer to the buffer */
+    int head;         /* Index of the head of the buffer */
+    int tail;         /* Index of the tail of the buffer */
+    int size;         /* Current size of the buffer */
+    int maxSize;      /* Maximum size of the buffer */
 } RingBuffer;
 
 RingBuffer* NewRingBuffer(int size);
