@@ -41,10 +41,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 typedef struct UserDB
 {
    char *filename;
-   uint32_t nextUserID;
+   unsigned int nextUserID;
    ArrayList *users;
-   Map *userIDs;
-   Map *usernames;
 } UserDB;
 
 extern UserDB *userDB;
@@ -52,8 +50,8 @@ extern UserDB *userDB;
 bool LoadUserDB(void);
 bool SaveUserDB(void);
 void AddUser(User *user);
-void RemoveUser(uint32_t userID);
-User *GetUserByID(uint32_t userID);
+void RemoveUser(unsigned int userID);
+User *GetUserByID(unsigned int userID);
 User *GetUserByUsername(const char *username);
 int GetUserCount(void);
 
@@ -63,8 +61,8 @@ void DestroyUserDB(UserDB *db);
 bool _LoadUserDB(UserDB *db);
 bool _SaveUserDB(UserDB *db);
 void _AddUser(UserDB *db, User *user);
-void _RemoveUser(UserDB *db, uint32_t userID);
-User *_GetUserByID(UserDB *db, uint32_t userID);
+void _RemoveUser(UserDB *db, unsigned int userID);
+User *_GetUserByID(UserDB *db, unsigned int userID);
 User *_GetUserByUsername(UserDB *db, const char *username);
 int _GetUserCount(UserDB *db);
 

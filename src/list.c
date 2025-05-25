@@ -204,6 +204,11 @@ bool IntListItemComparator(const void *item1, const void *item2)
     return *(int *)item1 == *(int *)item2;
 }
 
+bool UIntListItemComparator(const void *item1, const void *item2)
+{
+    return *(unsigned int *)item1 == *(unsigned int *)item2;
+}
+
 bool StringListItemComparator(const void *item1, const void *item2)
 {
     return strcmp((const char *)item1, (const char *)item2) == 0;

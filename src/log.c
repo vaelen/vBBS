@@ -29,6 +29,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdarg.h>
 #include <stdio.h>
 #include <vbbs/log.h>
+#include <time.h>
+#include <string.h>
 
 const char *LEVELS[] = {
     "DEBUG",
@@ -83,12 +85,23 @@ void SetLogLevel(LogLevel level)
  */
 void _LogMessage(FILE *stream, LogLevel level, const char *format, va_list args)
 {
+    char ts[20];
+    time_t now;
+    struct tm *tm_info;
     if (stream == NULL || level < LOG_LEVEL)
     {
         return;
     }
 
-    fprintf(stream, "[%s] ", LEVELS[level]);
+    memset(ts, 0, sizeof(ts));
+    now = time(NULL);
+    tm_info = localtime(&now);
+    if (tm_info != NULL)
+    {
+        strftime(ts, sizeof(ts), "%Y-%m-%d %H:%M:%S", tm_info);
+    }
+
+    fprintf(stream, "%s [%s] ", ts, LEVELS[level]);
     vfprintf(stream, format, args);
     fprintf(stream, "\n");
     fflush(stream);

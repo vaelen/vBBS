@@ -58,6 +58,11 @@ void BytesToHexString(char *bytes, int bytesSize, char *out, int outSize);
  */
 void ShiftBuffer(Buffer *buffer, int offset);
 
+/**
+ * Remove non-printable characters from a string.
+ */
+void CleanString(char *str);
+
 typedef enum {
    LINE_INPUT_MODE,
    CHARACTER_INPUT_MODE

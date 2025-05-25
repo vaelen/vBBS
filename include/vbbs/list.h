@@ -59,6 +59,7 @@ bool ArrayListContains(const ArrayList *list, const void *item,
 
 bool DefaultListItemComparator(const void *item1, const void *item2);
 bool IntListItemComparator(const void *item1, const void *item2);
+bool UIntListItemComparator(const void *item1, const void *item2);
 bool StringListItemComparator(const void *item1, const void *item2);
 bool StringListItemComparatorIgnoreCase(const void *item1, const void *item2);
 bool UInt8ListItemComparator(const void *item1, const void *item2);

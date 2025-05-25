@@ -35,20 +35,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 UserDB *userDB = NULL;
 
-static void toLowerString(char *str)
-{
-   int i;
-   int l = strlen(str);
-   if (str == NULL)
-   {
-      return;
-   }
-   for (i = 0; i < l; i++)
-   {
-      str[i] = tolower(str[i]);
-   }
-}
-
 UserDB *NewUserDB(const char *filename)
 {
    UserDB *db = (UserDB *) malloc(sizeof(UserDB));
@@ -61,27 +47,6 @@ UserDB *NewUserDB(const char *filename)
    db->nextUserID = 1;
    /* This list owns the user objects in memory. */
    db->users = NewArrayList(10, (ListItemDestructor)DestroyUser);
-   /* No destructor is provided so that removing users 
-      won't free the underlying user object's memory. */
-   db->userIDs = NewMap(NULL);
-   if (db->userIDs == NULL)
-   {
-      Error("Failed to create user map");
-      free(db->filename);
-      free(db);
-      return NULL;
-   }
-   /* No destructor is provided so that removing users 
-      won't free the underlying user object's memory. */
-   db->usernames = NewMap(NULL);
-   if (db->usernames == NULL)
-   {
-      Error("Failed to create usernames map");
-      DestroyMap(db->userIDs);
-      free(db->filename);
-      free(db);
-      return NULL;
-   }
    return db;
 }
 
@@ -94,14 +59,6 @@ void DestroyUserDB(UserDB *db)
    if (db->filename)
    {
       free(db->filename);
-   }
-   if (db->usernames)
-   {
-      DestroyMap(db->usernames);
-   }
-   if (db->userIDs)
-   {
-      DestroyMap(db->userIDs);
    }
    if (db->users)
    {
@@ -128,6 +85,9 @@ bool _LoadUserDB(UserDB *db)
 {
    FILE *file;
    User *user;
+   char value[256];
+   int fieldNum, i;
+   char c;
 
    if (db == NULL)
    {
@@ -142,20 +102,96 @@ bool _LoadUserDB(UserDB *db)
       return FALSE;
    }
 
-   /* Read the next user ID */
-   fscanf(file, "%u\n", &db->nextUserID);
+   memset(value, 0, sizeof(value));
+   fieldNum = 0;
+   i = 0;
+   user = NULL;
 
    /* Read users from the file */
    while (!feof(file))
    {
-      user = NewUser();
-      if (fscanf(file, "%u %s %s %s %d\n", &user->userID, user->username,
-                  user->pwHash, user->email, &user->userType) != 5)
+      c = fgetc(file);
+      
+      /* Start of a new line */
+      if (user == NULL)
       {
-         DestroyUser(user);
-         break;
+         user = NewUser();
+         if (user == NULL)
+         {
+            Error("Failed to allocate memory for user");
+            fclose(file);
+            return FALSE;
+         }
+         memset(value, 0, sizeof(value));
+         i = 0;
       }
+      
+      if (c == '\r')
+      {
+         /* Ignore carriage return */
+         continue;
+      }
+
+      if (c == '\t' || c == '\n')
+      {
+         /* End of a field, process the value */
+         switch (fieldNum)
+         {
+            case 0:
+               user->userID = atoi(value);
+               break;
+            case 1:
+               strncpy(user->username, value, sizeof(user->username) - 1);
+               user->username[sizeof(user->username) - 1] = '\0';
+               break;
+            case 2:
+               strncpy(user->email, value, sizeof(user->email) - 1);
+               user->email[sizeof(user->email) - 1] = '\0';
+               break;
+            case 3:
+               user->userType = atoi(value);
+               break;
+            case 4:
+               strncpy(user->pwHash, value, sizeof(user->pwHash) - 1);
+               user->pwHash[sizeof(user->pwHash) - 1] = '\0';
+               break;
+            case 5:
+               user->lastSeen = strtoul(value, NULL, 10);
+               break;
+         }
+         fieldNum++;
+         memset(value, 0, sizeof(value));
+         i = 0;
+      }
+      else
+      {
+         value[i++] = c;
+      }
+
+      if (c == '\n')
+      {
+         /* End of a user record. */
+         if (user != NULL && user->userID != 0)
+         {
+            _AddUser(db, user);
+            user = NULL;
+         }
+         fieldNum = 0;
+         continue;
+      }
+   }
+
+   if (user != NULL && user->userID != 0)
+   {
+      /* Add the last user if it exists */
       _AddUser(db, user);
+      user = NULL;
+   }
+
+   if (user != NULL)
+   {
+      /* If we end up with an unused empty record, clean it up. */
+      DestroyUser(user);
    }
 
    fclose(file);
@@ -191,9 +227,6 @@ bool _SaveUserDB(UserDB *db)
       return FALSE;
    }
 
-   /* Write the next user ID */
-   fprintf(file, "%u\n", db->nextUserID);
-
    /* Write users to the file */
    for (i = 0; i < db->users->size; i++)
    {
@@ -202,10 +235,15 @@ bool _SaveUserDB(UserDB *db)
       {
          continue;
       }
-      Debug("Saving User: %u %s %s %s %d %ld\n", user->userID, user->username,
+      Debug("Saving User: %lu\t%s\t%s\t%s\t%d\t%lu\n", user->userID, user->username,
                user->pwHash, user->email, user->userType, user->lastSeen);
-      fprintf(file, "%u %s %s %s %d %lu\n", user->userID, user->username,
-               user->pwHash, user->email, user->userType, user->lastSeen);
+      
+      fprintf(file, "%u\t", user->userID);
+      fprintf(file, "%s\t", user->username);
+      fprintf(file, "%s\t", user->email);
+      fprintf(file, "%d\t", user->userType);
+      fprintf(file, "%s\t", user->pwHash);
+      fprintf(file, "%lu\n", user->lastSeen);
    }
 
    fflush(file);
@@ -224,8 +262,6 @@ void AddUser(User *user)
 
 void _AddUser(UserDB *db, User *user)
 {
-   char userID[256];
-   char username[256];
    if (db == NULL || user == NULL)
    {
       return;
@@ -234,19 +270,20 @@ void _AddUser(UserDB *db, User *user)
    {
       user->userID = db->nextUserID++;
    }
-   user->lastSeen = time(NULL);
+   if (user->userID >= db->nextUserID)
+   {
+      db->nextUserID = user->userID + 1;
+   }
+   if (user->lastSeen == 0)
+   {
+      user->lastSeen = time(NULL);
+   }
    AddToArrayList(db->users, user);
-   sprintf(userID, USER_ID_FORMAT, user->userID);
-   MapPut(db->userIDs, userID, user);
-   strncpy(username, user->username, 
-      MIN(sizeof(username), sizeof(user->username)));
-   toLowerString(username);
-   MapPut(db->usernames, username, user);
-   Debug("Added user: %s, pw: %s, ID: %u, Seen: %lu (id: %s, username: %s)", user->username, user->pwHash, 
-      user->userID, user->lastSeen, userID, username);
+   Debug("Added user: %s, pw: %s, ID: %u, Seen: %lu", user->username, 
+      user->pwHash, user->userID, user->lastSeen);
 }
 
-void RemoveUser(uint32_t userID)
+void RemoveUser(unsigned int userID)
 {
    if (userDB == NULL)
    {
@@ -255,37 +292,31 @@ void RemoveUser(uint32_t userID)
    _RemoveUser(userDB, userID);
 }
 
-void _RemoveUser(UserDB *db, uint32_t userID)
+void _RemoveUser(UserDB *db, unsigned int userID)
 {
    User *user;
-   char key[256];
-   char username[256];
    int i;
    if (db == NULL)
    {
       return;
    }
-   sprintf(key, USER_ID_FORMAT, userID);
-   user = MapGet(db->userIDs, key);
-   if (user != NULL)
+   for (i = 0; i < db->users->size; i++)
    {
-      for (i = 0; i < db->users->size; i++)
+      user = (User *) GetFromArrayList(db->users, i);
+      if (user == NULL)
       {
-         if (user == GetFromArrayList(db->users, i))
-         {
-            RemoveFromArrayList(db->users, i);
-            break;
-         }
+         continue;
       }
-      strncpy(username, user->username, 
-         MIN(sizeof(username), sizeof(user->username)));
-      toLowerString(username);
-      MapRemove(db->usernames, username);
-      MapRemove(db->userIDs, key);
+      if (user->userID == userID)
+      {
+         Debug("Removing user: %s, ID: %u", user->username, user->userID);
+         RemoveFromArrayList(db->users, i);
+         break;
+      }
    }
 }
 
-User *GetUserByID(uint32_t userID)
+User *GetUserByID(unsigned int userID)
 {
    if (userDB == NULL)
    {
@@ -294,15 +325,27 @@ User *GetUserByID(uint32_t userID)
    return _GetUserByID(userDB, userID);
 }
 
-User *_GetUserByID(UserDB *db, uint32_t userID)
+User *_GetUserByID(UserDB *db, unsigned int userID)
 {
-   char key[256];
-   if (db == NULL || db->userIDs == NULL)
+   int i;
+   User *user;
+   if (db == NULL || db->users == NULL)
    {
       return NULL;
    }
-   sprintf(key, USER_ID_FORMAT, userID);
-   return MapGet(db->userIDs, key);
+      for (i = 0; i < db->users->size; i++)
+   {
+      user = (User *) GetFromArrayList(db->users, i);
+      if (user == NULL)
+      {
+         continue;
+      }
+      if (user->userID == userID)
+      {
+         return user;
+      }
+   }
+   return NULL;
 }
 
 User *GetUserByUsername(const char *username)
@@ -316,14 +359,25 @@ User *GetUserByUsername(const char *username)
 
 User *_GetUserByUsername(UserDB *db, const char *username)
 {
-   char key[256];
-   if (db == NULL || db->usernames == NULL || username == NULL)
+   int i;
+   User *user;
+   if (db == NULL || db->users == NULL || username == NULL)
    {
       return NULL;
    }
-   strncpy(key, username, sizeof(key));
-   toLowerString(key);
-   return MapGet(db->usernames, key);
+   for (i = 0; i < db->users->size; i++)
+   {
+      user = (User *) GetFromArrayList(db->users, i);
+      if (user == NULL)
+      {
+         continue;
+      }
+      if (strcasecmp(username, user->username) == 0)
+      {
+         return user;
+      }
+   }
+   return NULL;
 }
 
 int GetUserCount(void)
@@ -337,9 +391,9 @@ int GetUserCount(void)
 
 int _GetUserCount(UserDB *db)
 {
-   if (db == NULL || db->userIDs == NULL)
+   if (db == NULL || db->users == NULL)
    {
       return 0;
    }
-   return db->userIDs->size;
+   return db->users->size;
 }

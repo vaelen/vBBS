@@ -182,6 +182,8 @@ void CheckTerminalIdentity(Session *session)
     CheckIdentifyResponse(conn->outputBuffer, 
         conn->inputBuffer->nextLine, &conn->terminal);
 
+    ClearNextLine(conn->inputBuffer);
+
     session->eventHandler = PromptUserName;
     PromptUserName(session);
 }
@@ -230,7 +232,7 @@ void PromptUserName(Session *session)
     conn = session->conn;
 
     WriteToConnection(conn, RESET_MODES);
-    WriteToConnection(conn, "Login => ");
+    WriteToConnection(conn, "Username (or 'new' to sign up) => ");
     session->eventHandler = PromptPassword;
 }
 
@@ -250,6 +252,13 @@ void PromptPassword(Session *session)
 
     if (IsNextLineReady(conn->inputBuffer))
     {
+        /* CleanString(conn->inputBuffer->nextLine); */
+        if (strlen(conn->inputBuffer->nextLine) == 0)
+        {
+            ClearNextLine(conn->inputBuffer);
+            PromptUserName(session);
+            return;
+        }
         if (strcmp(conn->inputBuffer->nextLine, "new") == 0)
         {
             WriteToConnection(conn, "New user registration.\n");
@@ -476,6 +485,8 @@ void NewUserCheckPassword(Session *session)
         }
         ClearNextLine(conn->inputBuffer);
         ChangePassword(session->user, session->tempBuffer);
+        Debug("New user password set for %s: %s.", 
+            session->user->username, session->user->pwHash);
         NewUserPromptEmail(session);
     }
 }

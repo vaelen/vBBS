@@ -231,6 +231,39 @@ void ClearNextLine(InputBuffer *buffer)
     memset(buffer->nextLine, 0, sizeof(buffer->nextLine));
 }
 
+void CleanString(char *str)
+{
+    int i;
+    int l = strlen(str);
+    if (str == NULL)
+    {
+        return;
+    }
+    for (i = 0; i < l; i++)
+    {
+        if (str[i] == 0)
+        {
+            break;
+        }
+        if (str[i] < 0x20 || str[i] > 0x7E)
+        {
+            if (str[i+1] == 0)
+            {
+                str[i] = '\0';
+                break;
+            }
+            else
+            {
+                /* Shift the rest of the string */
+                memmove(str + i, str + i + 1, l - i);
+                i--;
+                l--;
+                continue;
+            }
+        }
+    }
+}
+
 void BytesToHexString(char *bytes, int bytesSize, char *out, int outSize)
 {
     int i;

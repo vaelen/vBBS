@@ -37,7 +37,7 @@ typedef enum
 
 typedef struct
 {
-    uint32_t userID;
+    unsigned int userID;
     char username[21];
     char pwHash[41];
     char email[41];

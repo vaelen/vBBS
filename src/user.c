@@ -114,12 +114,6 @@ bool ChangePassword(User *user, const char *newPassword)
     uint8_t hash[20];
     char hashString[41];
 
-    if (strlen((const char*)newPassword) < 8)
-    {
-        printf("Password must be at least 8 characters long.\n");
-        return FALSE;
-    }
-
     /* Hash the password */
     SHA1Init(&sha);
     SHA1Update(&sha, (uint8_t *) newPassword, strlen(newPassword));
@@ -132,7 +126,7 @@ bool ChangePassword(User *user, const char *newPassword)
     }
     hashString[40] = '\0';
 
-    strcpy((char*)user->pwHash, hashString);
-    printf("Password changed successfully.\n");
+    strncpy((char*)user->pwHash, hashString, sizeof(user->pwHash) - 1);
+    user->pwHash[sizeof(user->pwHash) - 1] = '\0';
     return TRUE;
 }

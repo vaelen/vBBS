@@ -55,7 +55,7 @@ typedef struct
 
 TelnetListener* NewTelnetListener(int port)
 {
-    int sockfd;
+    int sockfd, opt;
     struct sockaddr_in serverAddress;
     TelnetListener *listener;
 
@@ -70,6 +70,16 @@ TelnetListener* NewTelnetListener(int port)
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_addr.s_addr = INADDR_ANY;
     serverAddress.sin_port = htons(port);
+
+    /* Set socket options to allow reuse of the address */
+    opt = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, 
+                   &opt, sizeof(opt)) < 0)
+    {
+        Error("Telnet: Setsockopt failed, Error: %s", strerror(errno));
+        close(sockfd);
+        return NULL;
+    }
 
     if (bind(sockfd, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0)
     {
@@ -212,8 +222,6 @@ void DestroyTelnetConnection(Connection *conn)
         Debug("Telnet: Connection closed from %s:%d", 
             inet_ntoa(telnetData->remoteAddress.sin_addr), 
             ntohs(telnetData->remoteAddress.sin_port));
-        free(conn->data);
-        conn->data = NULL;
     }
 }
 
