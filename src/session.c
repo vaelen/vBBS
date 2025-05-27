@@ -64,6 +64,8 @@ void NewUserCheckPassword(Session *session);
 void NewUserPromptEmail(Session *session);
 void NewUserSubmit(Session *session);
 void ListUsers(Session *session);
+void ShowMainMenu(Session *session);
+void MainMenuSelection(Session *session);
 
 Session* NewSession(Connection *conn)
 {
@@ -353,10 +355,7 @@ void LoggedIn(Session *session)
     WriteToConnection(conn, "Welcome %s!\n", session->user->username);
     WriteToConnection(conn, "You are now logged in.\n");
 
-    session->eventHandler = ListUsers;
-    session->nextEventHandler = Logout;
-
-    ListUsers(session);
+    ShowMainMenu(session);
 }
 
 void Logout(Session *session)
@@ -568,5 +567,60 @@ void ListUsers(Session *session)
                 user->username, user->email);
         }
     }
+    WriteToConnection(conn, "Press enter to continue...\n");
+    ClearNextLine(conn->inputBuffer);
     session->eventHandler = session->nextEventHandler;
+}
+
+void ShowMainMenu(Session *session)
+{
+    Connection *conn;
+
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    conn = session->conn;
+
+    WriteToConnection(conn, RESET_MODES);
+    WriteToConnection(conn, "Main Menu:\n");
+    WriteToConnection(conn, "1. List Users\n");
+    WriteToConnection(conn, "2. Logout\n");
+    WriteToConnection(conn, "Choose an option: ");
+    
+    session->eventHandler = MainMenuSelection;
+}
+
+void MainMenuSelection(Session *session)
+{
+    Connection *conn;
+    char choice[3];
+
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    conn = session->conn;
+
+    if (IsNextLineReady(conn->inputBuffer))
+    {
+        strncpy(choice, conn->inputBuffer->nextLine, sizeof(choice) - 1);
+        choice[sizeof(choice) - 1] = '\0';
+        ClearNextLine(conn->inputBuffer);
+
+        if (strcmp(choice, "1") == 0)
+        {
+            session->nextEventHandler = ShowMainMenu;
+            ListUsers(session);
+        }
+        else if (strcmp(choice, "2") == 0)
+        {
+            Logout(session);
+        }
+        else
+        {
+            WriteToConnection(conn, "Invalid option. Please try again.\n");
+            ShowMainMenu(session);
+        }
+    }
 }

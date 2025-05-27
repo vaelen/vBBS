@@ -56,3 +56,4 @@ obj/*
 .vscode/*
 
 *.log
+*.db
