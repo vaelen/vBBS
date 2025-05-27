@@ -220,6 +220,72 @@ static void testArrayListContainsWithComparator(void) {
     DestroyArrayList(list);
 }
 
+static void testSortArrayList(void) {
+    ArrayList *list = NewArrayList(5, free);
+    int a = 5, b = 3, c = 8, d = 1, e = 4;
+    int *pa, *pb, *pc, *pd, *pe;
+    pa = (int *)malloc(sizeof(int));
+    pb = (int *)malloc(sizeof(int));
+    pc = (int *)malloc(sizeof(int));
+    pd = (int *)malloc(sizeof(int));
+    pe = (int *)malloc(sizeof(int));
+    *pa = a; *pb = b; *pc = c; *pd = d; *pe = e;
+    AddToArrayList(list, pa);
+    AddToArrayList(list, pb);
+    AddToArrayList(list, pc);
+    AddToArrayList(list, pd);
+    AddToArrayList(list, pe);
+    
+    SortArrayList(list, IntListItemComparator);
+    
+    printTestResult("testSortArrayList", 
+        IntListItemComparator(list->items[0], &d) == 0 &&
+        IntListItemComparator(list->items[1], &b) == 0 &&
+        IntListItemComparator(list->items[2], &e) == 0 &&
+        IntListItemComparator(list->items[3], &a) == 0 &&
+        IntListItemComparator(list->items[4], &c) == 0);
+    
+    DestroyArrayList(list);
+}
+
+void testBubbleSort(void)
+{
+    int a = 5, b = 3, c = 8, d = 1, e = 4;
+    int *list[5];
+    list[0] = &a;
+    list[1] = &b;
+    list[2] = &c;
+    list[3] = &d;
+    list[4] = &e;
+    // Before sorting: 5, 3, 8, 1, 4
+    BubbleSort((void**)list, 5, IntListItemComparator);
+    printTestResult("testBubbleSort", 
+        IntListItemComparator(list[0], &d) == 0 &&
+        IntListItemComparator(list[1], &b) == 0 &&
+        IntListItemComparator(list[2], &e) == 0 &&
+        IntListItemComparator(list[3], &a) == 0 &&
+        IntListItemComparator(list[4], &c) == 0);
+}
+
+void testQuickSort(void)
+{
+    int a = 5, b = 3, c = 8, d = 1, e = 4;
+    int *list[5];
+    list[0] = &a;
+    list[1] = &b;
+    list[2] = &c;
+    list[3] = &d;
+    list[4] = &e;
+    // Before sorting: 5, 3, 8, 1, 4
+    QuickSort((void**)list, 0, 4, IntListItemComparator);
+    printTestResult("testQuickSort", 
+        IntListItemComparator(list[0], &d) == 0 &&
+        IntListItemComparator(list[1], &b) == 0 &&
+        IntListItemComparator(list[2], &e) == 0 &&
+        IntListItemComparator(list[3], &a) == 0 &&
+        IntListItemComparator(list[4], &c) == 0);
+}
+
 void runAllListTests(void) {
     printf("Running List Tests...\n");
     testNewArrayListAndDestroyArrayList();
@@ -233,5 +299,8 @@ void runAllListTests(void) {
     testClearArrayList();
     testIsArrayListEmptyAndArrayListSize();
     testArrayListWithDestructor();
+    testBubbleSort();
+    testQuickSort();
+    testSortArrayList();
     printf("\n");
 }

@@ -27,6 +27,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/list.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 ArrayList *NewArrayList(int initialCapacity, ListItemDestructor destructor)
 {
@@ -185,7 +186,7 @@ bool ArrayListContains(const ArrayList *list, const void *item,
 
     for (i = 0; i < list->size; i++)
     {
-        if (comparator(list->items[i], item))
+        if (comparator(list->items[i], item) == 0)
         {
             return TRUE;
         }
@@ -194,57 +195,201 @@ bool ArrayListContains(const ArrayList *list, const void *item,
     return FALSE;
 }
 
-bool DefaultListItemComparator(const void *item1, const void *item2)
+#define COMPARE_NULLS(item1, item2) \
+    if (item1 == NULL && item2 == NULL) return 0; \
+    if (item1 == NULL && item2 != NULL) return -1; \
+    if (item1 != NULL && item2 == NULL) return 1;
+
+int DefaultListItemComparator(const void *item1, const void *item2)
 {
-    return item1 == item2;
+    COMPARE_NULLS(item1, item2);
+    return item1 == item2 ? 0 : (item1 < item2 ? -1 : 1);
 }
 
-bool IntListItemComparator(const void *item1, const void *item2)
+int IntListItemComparator(const void *item1, const void *item2)
 {
-    return *(int *)item1 == *(int *)item2;
+    COMPARE_NULLS(item1, item2);
+    return *(int *)item1 - *(int *)item2;
 }
 
-bool UIntListItemComparator(const void *item1, const void *item2)
+int UIntListItemComparator(const void *item1, const void *item2)
 {
-    return *(unsigned int *)item1 == *(unsigned int *)item2;
+    COMPARE_NULLS(item1, item2);
+    return *(unsigned int *)item1 - *(unsigned int *)item2;
 }
 
-bool StringListItemComparator(const void *item1, const void *item2)
+int StringListItemComparator(const void *item1, const void *item2)
 {
-    return strcmp((const char *)item1, (const char *)item2) == 0;
+    COMPARE_NULLS(item1, item2);
+    return strcmp((const char *)item1, (const char *)item2);
 }
 
-bool StringListItemComparatorIgnoreCase(const void *item1, const void *item2)
+int StringListItemComparatorIgnoreCase(const void *item1, const void *item2)
 {
-    return strcasecmp((const char *)item1, (const char *)item2) == 0;
+    COMPARE_NULLS(item1, item2);
+    return strcasecmp((const char *)item1, (const char *)item2);
 }
 
-bool UInt8ListItemComparator(const void *item1, const void *item2)
+int UInt8ListItemComparator(const void *item1, const void *item2)
 {
-    return *(uint8_t *)item1 == *(uint8_t *)item2;
+    COMPARE_NULLS(item1, item2);
+    return *(uint8_t *)item1 - *(uint8_t *)item2;
 }
 
-bool UInt16ListItemComparator(const void *item1, const void *item2)
+int UInt16ListItemComparator(const void *item1, const void *item2)
 {
-    return *(uint16_t *)item1 == *(uint16_t *)item2;
+    COMPARE_NULLS(item1, item2);
+    return *(uint16_t *)item1 - *(uint16_t *)item2;
 }
 
-bool UInt32ListItemComparator(const void *item1, const void *item2)
+int UInt32ListItemComparator(const void *item1, const void *item2)
 {
-    return *(uint32_t *)item1 == *(uint32_t *)item2;
+    COMPARE_NULLS(item1, item2);
+    return *(uint32_t *)item1 - *(uint32_t *)item2;
 }
 
-bool Int8ListItemComparator(const void *item1, const void *item2)
+int Int8ListItemComparator(const void *item1, const void *item2)
 {
-    return *(int8_t *)item1 == *(int8_t *)item2;
+    COMPARE_NULLS(item1, item2);
+    return *(int8_t *)item1 - *(int8_t *)item2;
 }
 
-bool Int16ListItemComparator(const void *item1, const void *item2)
+int Int16ListItemComparator(const void *item1, const void *item2)
 {
-    return *(int16_t *)item1 == *(int16_t *)item2;
+    COMPARE_NULLS(item1, item2);
+    return *(int16_t *)item1 - *(int16_t *)item2;
 }
 
-bool Int32ListItemComparator(const void *item1, const void *item2)
+int Int32ListItemComparator(const void *item1, const void *item2)
 {
-    return *(int32_t *)item1 == *(int32_t *)item2;
+    COMPARE_NULLS(item1, item2);
+    return *(int32_t *)item1 - *(int32_t *)item2;
 }
+
+void SortArrayList(ArrayList *list, ListItemComparator comparator)
+{
+    if (list == NULL || list->items == NULL || list->size <= 1)
+    {
+        return;
+    }
+
+    if (comparator == NULL)
+    {
+        comparator = DefaultListItemComparator;
+    }
+
+    if (list->size < 5)
+    {
+        BubbleSort((void**)list->items, list->size, comparator);
+        return;
+    }
+
+    QuickSort((void**)list->items, 0, list->size - 1, comparator);
+
+}
+
+void BubbleSort(void **array, int size, 
+    ListItemComparator comparator)
+{
+    int i, j;
+    void *temp;
+
+    if (comparator == NULL)
+    {
+        comparator = DefaultListItemComparator;
+    }
+
+    for (i = 0; i < size - 1; i++)
+    {
+        for (j = 0; j < size - i - 1; j++)
+        {
+            if (comparator(array[j], array[j + 1]) > 0)
+            {
+                temp = array[j];
+                array[j] = array[j + 1];
+                array[j + 1] = temp;
+            }
+        }
+    }
+}
+
+void QuickSort(void **array, int left, int right, 
+    ListItemComparator comparator)
+{
+    int i = left, j = right, p = (left + right) / 2;
+    void *lo, *mid, *hi;
+    void *pivot;
+    void *temp;
+
+    if (array == NULL || left < 0 || right < 0 || left >= right)
+    {
+        return;
+    }
+
+    if (comparator == NULL)
+    {
+        comparator = DefaultListItemComparator;
+    }
+
+    lo = array[left];
+    mid = array[p];
+    hi = array[right];
+
+    // Choose the pivot as the median of the first, middle, and last elements
+    if (comparator(mid, lo) < 0)
+    {
+        array[left] = mid;
+        array[p] = lo;
+        lo = array[left];
+        mid = array[p];
+        hi = array[right];
+    }
+    if (comparator(hi, lo) < 0)
+    {
+        array[left] = hi;
+        array[right] = lo;
+        lo = array[left];
+        mid = array[p];
+        hi = array[right];
+    }
+    if (comparator(hi, mid) < 0)
+    {
+        array[p] = hi;
+        array[right] = mid;
+        lo = array[left];
+        mid = array[p];
+        hi = array[right];
+    }
+    pivot = mid;
+
+    while (i >= 0 && j >= 0 && i < j)
+    {
+        while (comparator(array[i], pivot) < 0)
+        {
+            i++;
+        }
+        while (comparator(pivot, array[j]) < 0)
+        {
+            j--;
+        }
+        if (i <= j)
+        {
+            // Swap elements
+            temp = array[i];
+            array[i] = array[j];
+            array[j] = temp;
+            i++;
+            j--;
+        }
+    }
+
+    if (left < j)
+    {
+        QuickSort(array, left, p, comparator);
+    }
+    if (i < right)
+    {
+        QuickSort(array, p+1, right, comparator);
+    }
+}
+

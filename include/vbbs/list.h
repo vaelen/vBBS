@@ -28,7 +28,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vbbs/types.h>
 
 typedef void (*ListItemDestructor)(void *item);
-typedef bool (*ListItemComparator)(const void *item1, const void *item2);
+typedef int (*ListItemComparator)(const void *item1, const void *item2);
 
 typedef struct ArrayList
 {
@@ -57,17 +57,23 @@ int ArrayListSize(ArrayList *list);
 bool ArrayListContains(const ArrayList *list, const void *item, 
     ListItemComparator comparator);
 
-bool DefaultListItemComparator(const void *item1, const void *item2);
-bool IntListItemComparator(const void *item1, const void *item2);
-bool UIntListItemComparator(const void *item1, const void *item2);
-bool StringListItemComparator(const void *item1, const void *item2);
-bool StringListItemComparatorIgnoreCase(const void *item1, const void *item2);
-bool UInt8ListItemComparator(const void *item1, const void *item2);
-bool UInt16ListItemComparator(const void *item1, const void *item2);
-bool UInt32ListItemComparator(const void *item1, const void *item2);
-bool Int8ListItemComparator(const void *item1, const void *item2);
-bool Int16ListItemComparator(const void *item1, const void *item2);
-bool Int32ListItemComparator(const void *item1, const void *item2);
+int DefaultListItemComparator(const void *item1, const void *item2);
+int IntListItemComparator(const void *item1, const void *item2);
+int UIntListItemComparator(const void *item1, const void *item2);
+int StringListItemComparator(const void *item1, const void *item2);
+int StringListItemComparatorIgnoreCase(const void *item1, const void *item2);
+int UInt8ListItemComparator(const void *item1, const void *item2);
+int UInt16ListItemComparator(const void *item1, const void *item2);
+int UInt32ListItemComparator(const void *item1, const void *item2);
+int Int8ListItemComparator(const void *item1, const void *item2);
+int Int16ListItemComparator(const void *item1, const void *item2);
+int Int32ListItemComparator(const void *item1, const void *item2);
 
+void SortArrayList(ArrayList *list, ListItemComparator comparator);
+
+void BubbleSort(void **array, int size, 
+    ListItemComparator comparator);
+void QuickSort(void **array, int left, int right, 
+    ListItemComparator comparator);
 
 #endif /* _VBBS_LIST_H */
