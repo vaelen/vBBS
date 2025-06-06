@@ -33,11 +33,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 
 /* WindowSizeHandler is called when the window size is received. */
-typedef void (*WindowSizeHandler)(int width, int height);
+typedef void (*WindowSizeHandler)(void *userData, int width, int height);
 /* TerminalTypeHanlder is called when the terminal type is received. */
-typedef void (*TerminalTypeHandler)(const char *type);
+typedef void (*TerminalTypeHandler)(void *userData, const char *type);
 /* ConnectionSpeedHandler is called when the connection speed is received. */
-typedef void (*ConnectionSpeedHandler)(int speed);
+typedef void (*ConnectionSpeedHandler)(void *userData, int speed);
 
 typedef struct Buffer {
    uint8_t *bytes; /* The underlying byte array */
@@ -51,6 +51,7 @@ typedef struct Buffer {
    int inTelnet; /* True when currently processing a Telnet command */
    int inTelnetSB; /* True when in a Telnet SE sequence */
    uint8_t commandBuffer[256]; /* Buffer for ANSI/Telnet commands */
+   void *userData; /* User data for custom handlers */
    WindowSizeHandler windowSize; /* Handler for window size changes */
    TerminalTypeHandler terminalType; /* Handler for terminal type */
    ConnectionSpeedHandler connectionSpeed; /* Handler for connection speed */

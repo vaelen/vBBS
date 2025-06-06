@@ -200,8 +200,51 @@ void IdentifyTerminal(Session *session)
     }
     conn = session->conn;
 
+    conn->inputBuffer->buffer->userData = session;
+    conn->inputBuffer->buffer->windowSize = SetSessionWindowSize;
+    conn->inputBuffer->buffer->terminalType = SetSessionTerminalType;
+    conn->inputBuffer->buffer->connectionSpeed = SetSessionConnectionSpeed;
+
     Identify(conn->outputBuffer);
     session->eventHandler = CheckTerminalIdentity;
+}
+
+void SetSessionWindowSize(void *userData, int width, int height)
+{
+    Session *session = (Session *)userData;
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    session->conn->terminal.width = width;
+    session->conn->terminal.height = height;
+    Info("[%d] Terminal window size set to %dx%d", 
+        session->sessionID, width, height);
+}
+
+void SetSessionTerminalType(void *userData, const char *type)
+{
+    Session *session = (Session *)userData;
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    strncpy(session->conn->terminal.type, type, 
+        sizeof(session->conn->terminal.type));
+    Info("[%d] Terminal type set to %s", 
+        session->sessionID, session->conn->terminal.type);
+}
+
+void SetSessionConnectionSpeed(void *userData, int speed)
+{
+    Session *session = (Session *)userData;
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+    session->conn->connectionSpeed = speed;
+    Info("[%d] Connection speed set to %d bps", 
+        session->sessionID, speed);
 }
 
 void Connected(Session *session)

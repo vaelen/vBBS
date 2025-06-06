@@ -209,24 +209,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define TELNET_OPTION_NEW_ENVIRON           39 /* 0x27 */
 
 
-#define TELNET_DO_ECHO      "\xFF\xFD\x01" /* Please start echoing*/
-#define TELNET_DONT_ECHO    "\xFF\xFE\x01" /* Do not echo */
-#define TELNET_WILL_ECHO    "\xFF\xFB\x01" /* I will echo */
-#define TELNET_WONT_ECHO    "\xFF\xFC\x01" /* I will not echo */
+#define TELNET_DO_BINARY                "\xFF\xFD\x00"
+#define TELNET_WILL_BINARY              "\xFF\xFB\x00"
 
-#define TELNET_DO_LINE_MODE_NEG     "\xFF\xFD\x22"
-#define TELNET_DONT_LINE_MODE_NEG   "\xFF\xFE\x22"
-#define TELNET_WILL_LINE_MODE_NEG   "\xFF\xFB\x22"
-#define TELNET_WONT_LINE_MODE_NEG   "\xFF\xFC\x22"
+#define TELNET_DONT_ECHO                "\xFF\xFE\x01"
+#define TELNET_WILL_ECHO                "\xFF\xFB\x01"
 
 #define TELNET_DO_SUPPRESS_GO_AHEAD     "\xFF\xFD\x03"
-#define TELNET_DONT_SUPPRESS_GO_AHEAD   "\xFF\xFE\x03"
 #define TELNET_WILL_SUPPRESS_GO_AHEAD   "\xFF\xFB\x03"
-#define TELNET_WONT_SUPPRESS_GO_AHEAD   "\xFF\xFC\x03"
 
-/* Disable line mode editing*/
-#define TELNET_LINE_MODE_DEFAULTS1  "\xFF\xFA\x22\x01\x00\xFF\xF0"
-#define TELNET_LINE_MODE_DEFAULTS2  "\xFF\xFA\x22\xFE\x02\xFF\xF0"
+#define TELNET_DO_TERMINAL_TYPE         "\xFF\xFD\x18"
+#define TELNET_WONT_TERMINAL_TYPE       "\xFF\xFC\x18"
+                                        /* SB TERMINAL-TYPE SEND SE */
+#define TELNET_REQ_TERMINAL_TYPE        "\xFF\xFA\x18\x01\xFF\xF0" 
+
+#define TELNET_DO_WINDOW_SIZE           "\xFF\xFD\x1F"
+#define TELNET_WONT_WINDOW_SIZE         "\xFF\xFC\x1F"
+                                        /* SB WINDOW_SIZE SEND SE */
+#define TELNET_REQ_WINDOW_SIZE          "\xFF\xFA\x1F\x01\xFF\xF0" 
+
+#define TELNET_DO_TERMINAL_SPEED        "\xFF\xFD\x20"
+#define TELNET_WONT_TERMINAL_SPEED      "\xFF\xFC\x20"
+                                        /* SB TERMINAL_SPEED SEND SE */
+#define TELNET_REQ_TERMINAL_SPEED       "\xFF\xFA\x20\x01\xFF\xF0"
+
 
 /**
  * Data structures and functions
@@ -240,7 +246,8 @@ typedef enum
 
 typedef struct
 {
-    char *type;
+    /* Terminal type: VT220, VT100, etc. */
+    char type[64];
     bool isANSI;
     unsigned int width;
     unsigned int height;
@@ -250,5 +257,6 @@ void InitTerminal(Terminal *terminal);
 void Identify(Buffer *out);
 void CheckIdentifyResponse(Buffer *out, const char *response,
     Terminal *terminal);
+void SetTerminalType(Terminal *terminal, const char *type);
 
 #endif

@@ -34,7 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void InitTerminal(Terminal *terminal)
 {
-    terminal->type = "Unknown";
+    SetTerminalType(terminal, "Unknown");
     terminal->isANSI = TRUE;
     terminal->width = 80;
     terminal->height = 24;
@@ -46,8 +46,16 @@ void Identify(Buffer *out)
     WriteStringToBuffer(out, SET_CONCEAL);
     WriteStringToBuffer(out, TELNET_DO_SUPPRESS_GO_AHEAD);
     WriteStringToBuffer(out, TELNET_WILL_SUPPRESS_GO_AHEAD);
+    //WriteStringToBuffer(out, TELNET_DO_BINARY);
+    //WriteStringToBuffer(out, TELNET_WILL_BINARY);
     WriteStringToBuffer(out, TELNET_DONT_ECHO);
     WriteStringToBuffer(out, TELNET_WILL_ECHO);
+    WriteStringToBuffer(out, TELNET_DO_TERMINAL_TYPE);
+    WriteStringToBuffer(out, TELNET_REQ_TERMINAL_TYPE);
+    WriteStringToBuffer(out, TELNET_DO_WINDOW_SIZE);
+    WriteStringToBuffer(out, TELNET_REQ_WINDOW_SIZE);
+    WriteStringToBuffer(out, TELNET_DO_TERMINAL_SPEED);
+    WriteStringToBuffer(out, TELNET_REQ_TERMINAL_SPEED);
     WriteStringToBuffer(out, IDENTIFY);
 }
 
@@ -95,43 +103,43 @@ void CheckIdentifyResponse(Buffer *out, const char *response,
         {
             case 1:
                 Debug("Terminal type: VT100");
-                terminal->type = "VT100";
+                SetTerminalType(terminal, "VT100");
                 break;
             case 4:
                 Debug("Terminal type: VT132");
-                terminal->type = "VT132";
+                SetTerminalType(terminal, "VT132");
                 break;
             case 6:
                 Debug("Terminal type: VT102");
-                terminal->type = "VT102";
+                SetTerminalType(terminal, "VT102");
                 break;
             case 7:
                 Debug("Terminal type: VT131");
-                terminal->type = "VT131";
+                SetTerminalType(terminal, "VT131");
                 break;
             case 12:
                 Debug("Terminal type: VT125");
-                terminal->type = "VT125";
+                SetTerminalType(terminal, "VT125");
                 break;
             case 61:
                 Debug("Terminal type: Gnome Terminal?");
-                terminal->type = "Gnome Terminal?";
+                SetTerminalType(terminal, "Gnome Terminal?");
                 break;
             case 62:
                 Debug("Terminal type: VT220");
-                terminal->type = "VT220";
+                SetTerminalType(terminal, "VT220");
                 break;
             case 63:
                 Debug("Terminal type: VT320");
-                terminal->type = "VT320";
+                SetTerminalType(terminal, "VT320");
                 break;
             case 64:
                 Debug("Terminal type: VT420");
-                terminal->type = "VT420";
+                SetTerminalType(terminal, "VT420");
                 break;
             case 65:
                 Debug("Terminal type: VT520");
-                terminal->type = "VT520";
+                SetTerminalType(terminal, "VT520");
                 break;               
             default:
                 Debug("Unknown terminal type: %d (%s)", attrs[0], da);
@@ -147,4 +155,14 @@ void CheckIdentifyResponse(Buffer *out, const char *response,
     {
         WriteStringToBuffer(out, "ANSI escape codes disabled.\n");
     }
+}
+
+void SetTerminalType(Terminal *terminal, const char *type)
+{
+    if (terminal == NULL || type == NULL)
+    {
+        return;
+    }
+    strncpy(terminal->type, type, sizeof(terminal->type) - 1);
+    terminal->type[sizeof(terminal->type) - 1] = '\0';
 }

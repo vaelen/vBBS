@@ -109,30 +109,27 @@ Buffer *NewBuffer(int size)
     return buffer;
 }
 
-static void SetWindowSize(Buffer *buffer, int width, int height)
+static void _SetWindowSize(Buffer *buffer, int width, int height)
 {
-    Debug("[TELNET] Setting window size to %dx%d", width, height);
-    if (buffer->windowSize != NULL)
+    if (buffer !=NULL && buffer->windowSize != NULL)
     {
-        buffer->windowSize(width, height);
+        buffer->windowSize(buffer->userData, width, height);
     }
 }
 
-static void SetTerminalType(Buffer *buffer, const char *type)
+static void _SetTerminalType(Buffer *buffer, const char *type)
 {
-    Debug("[TELNET] Setting terminal type to %s", type);
-    if (buffer->terminalType != NULL)
+    if (buffer !=NULL && buffer->terminalType != NULL)
     {
-        buffer->terminalType(type);
+        buffer->terminalType(buffer->userData, type);
     }
 }
 
-static void SetConnectionSpeed(Buffer *buffer, int speed)
+static void _SetConnectionSpeed(Buffer *buffer, int speed)
 {
-    Debug("[TELNET] Setting connection speed to %d", speed);
-    if (buffer->connectionSpeed != NULL)
+    if (buffer !=NULL && buffer->connectionSpeed != NULL)
     {
-        buffer->connectionSpeed(speed);
+        buffer->connectionSpeed(buffer->userData, speed);
     }
 }
 
@@ -170,7 +167,8 @@ int BufferRemaining(Buffer *buffer)
 int WriteToBuffer(Buffer *buffer, const char *data, int length)
 {
     int i;
-    int cmd, option;
+    int cmd, option, width, height, speed;
+    char terminalType[64];
 
     for (i = 0; i < length; i++)
     {
@@ -236,6 +234,34 @@ int WriteToBuffer(Buffer *buffer, const char *data, int length)
                 Debug("[TELNET] Subnegotiation, option: %s",
                       TelnetOption(option));
 
+                if (cmd == 0) switch(option)
+                {
+                    case TELNET_OPTION_WINDOW_SIZE:
+                        width = (buffer->commandBuffer[2] << 8) |
+                            buffer->commandBuffer[3];
+                        height = (buffer->commandBuffer[4] << 8) |
+                            buffer->commandBuffer[5];
+                        Debug("Telnet window size: %dx%d", width, height);
+                        _SetWindowSize(buffer, width, height);
+                        break;
+                    case TELNET_OPTION_TERMINAL_TYPE:
+                        strncpy(terminalType,
+                               (const char *)&buffer->commandBuffer[3],
+                               buffer->inTelnetSB - 1);
+                        Debug("Telnet terminal type: %s", terminalType);
+                        _SetTerminalType(buffer, terminalType);
+                        break;
+                    case TELNET_OPTION_TERMINAL_SPEED:
+                        speed = (buffer->commandBuffer[2] << 8) |
+                            buffer->commandBuffer[3];
+                        Debug("Telnet connection speed: %d", speed);
+                        _SetConnectionSpeed(buffer, speed);
+                        break;
+                    default:
+                        Debug("[TELNET] Unhandled subnegotiation option: %s",
+                              TelnetOption(option));
+                }
+
                 buffer->inTelnetSB = 0; /* Reset subnegotiation state */
                 buffer->inTelnet = -1;   /* Reset Telnet state */
                 memset(buffer->commandBuffer, 0, sizeof(buffer->commandBuffer));
@@ -246,8 +272,33 @@ int WriteToBuffer(Buffer *buffer, const char *data, int length)
                 cmd = buffer->commandBuffer[0];
                 option = buffer->commandBuffer[1];
 
-                Debug("[TELNET] Received command: %s, option: %s",
+                Debug("Received telnet command: %s %s",
                       TelnetCommand(cmd), TelnetOption(option));
+
+                if (cmd == TELNET_WILL)
+                {
+                    switch (option)
+                    {
+                    case TELNET_OPTION_WINDOW_SIZE:
+                        /* Respond with DO */
+                        WriteStringToBuffer(buffer, TELNET_REQ_WINDOW_SIZE);
+                        Debug("Sending REQ WINDOW_SIZE");
+                        break;
+                    case TELNET_OPTION_TERMINAL_TYPE:
+                        /* Respond with DO */
+                        WriteStringToBuffer(buffer, TELNET_REQ_TERMINAL_TYPE);
+                        Debug("Sending REQ TERMINAL_TYPE");
+                        break;
+                    case TELNET_OPTION_TERMINAL_SPEED:
+                        /* Respond with DO */
+                        WriteStringToBuffer(buffer, TELNET_REQ_TERMINAL_SPEED);
+                        Debug("Sending REQ TERMINAL_SPEED");
+                        break;
+                    default:
+                        Debug("Unhandled WILL command for option: %s",
+                              TelnetOption(option));
+                    }
+                }
 
                 /* We have the command, now check it */
                 if (cmd == TELNET_SB)

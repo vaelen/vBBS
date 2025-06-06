@@ -52,5 +52,8 @@ struct Session {
 Session* NewSession(Connection *conn);
 void DestroySession(Session *session);
 void Connected(Session *session);
+void SetSessionWindowSize(void *userData, int width, int height);
+void SetSessionTerminalType(void *userData, const char *type);
+void SetSessionConnectionSpeed(void *userData, int speed);
 
 #endif

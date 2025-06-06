@@ -44,7 +44,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <fcntl.h>
-#include <termios.h>
 
 #define MAX_REQUESTS 5
 
@@ -108,30 +107,6 @@ TelnetListener* NewTelnetListener(int port)
     return listener;
 }
 
-void setTerminalAttributes(int sockfd)
-{
-    struct termios tty;
-    if (tcgetattr(sockfd, &tty) < 0)
-    {
-        Error("Telnet: Could not get terminal attributes, Error: %s", 
-            strerror(errno));
-        return;
-    }
-    
-    /* Disable canonical mode, signal processing, and echo */
-    tty.c_lflag &= ~(ICANON | ISIG | ECHO ); 
-    /* Disable XON/XOFF flow control and CR/NL translation */
-    /* tty.c_iflag &= ~(IXON | ICRNL); */
-    /* Disable output processing */
-    /* tty.c_oflag &= ~OPOST; */
-
-    if (tcsetattr(sockfd, TCSANOW, &tty) < 0)
-    {
-        Error("Telnet: Could not set terminal attributes, Error: %s", 
-            strerror(errno));
-    }
-}
-
 Connection* TelnetListenerAccept(TelnetListener *listener)
 {
     TelnetConnectionData *telnetData = NULL;
@@ -174,8 +149,6 @@ Connection* TelnetListenerAccept(TelnetListener *listener)
     conn->data = telnetData;
     /* enable non-blocking I/O */
     fcntl(sockfd, F_SETFL, O_NONBLOCK); 
-    /* set terminal attributes so input is not buffered */
-    setTerminalAttributes(sockfd);
 
     conn->inputStream = fdopen(sockfd, "r");
     conn->outputStream = fdopen(sockfd, "w");
