@@ -71,6 +71,7 @@ Connection* NewConnection(void);
 void DestroyConnection(Connection *conn);
 void Disconnect(Connection *conn, bool closeImmediately);
 void WriteToConnection(Connection *conn, const char *format, ...);
+void WriteCharToConnection(Connection *conn, char c);
 int WriteBufferToConnection(Connection *conn);
 
 #endif

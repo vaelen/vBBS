@@ -204,6 +204,7 @@ void IdentifyTerminal(Session *session)
     conn->inputBuffer->buffer->windowSize = SetSessionWindowSize;
     conn->inputBuffer->buffer->terminalType = SetSessionTerminalType;
     conn->inputBuffer->buffer->connectionSpeed = SetSessionConnectionSpeed;
+    conn->inputBuffer->buffer->echo = EchoCharToSession;
 
     Identify(conn->outputBuffer);
     session->eventHandler = CheckTerminalIdentity;
@@ -235,16 +236,39 @@ void SetSessionTerminalType(void *userData, const char *type)
         session->sessionID, session->conn->terminal.type);
 }
 
-void SetSessionConnectionSpeed(void *userData, int speed)
+void SetSessionConnectionSpeed(void *userData, const char *speed)
 {
     Session *session = (Session *)userData;
     if (session == NULL || session->conn == NULL)
     {
         return;
     }
-    session->conn->connectionSpeed = speed;
-    Info("[%d] Connection speed set to %d bps", 
-        session->sessionID, speed);
+    session->conn->connectionSpeed = (unsigned int)atoi(speed);
+    Info("[%d] Connection speed set to %d bps: %s", 
+        session->sessionID, session->conn->connectionSpeed, speed);
+}
+
+void EchoCharToSession(void *userData, const char c)
+{
+    Session *session = (Session *)userData;
+    if (session == NULL || session->conn == NULL)
+    {
+        return;
+    }
+
+    if (c == '\r')
+    {
+        WriteCharToConnection(session->conn, '\r');
+        WriteCharToConnection(session->conn, '\n');
+    }
+    else if (c == '\n')
+    {
+        /* NOOP */
+    }
+    else
+    {
+        WriteCharToConnection(session->conn, c);
+    }
 }
 
 void Connected(Session *session)
@@ -277,7 +301,7 @@ void PromptUserName(Session *session)
     conn = session->conn;
 
     WriteToConnection(conn, RESET_MODES);
-    WriteToConnection(conn, SET_CONCEAL_OFF);
+    conn->inputBuffer->buffer->echoMode = ECHO_ON;
     WriteToConnection(conn, "Username (or 'new' to sign up) => ");
     session->eventHandler = PromptPassword;
 }
@@ -324,9 +348,9 @@ void PromptPassword(Session *session)
         strncpy(session->tempBuffer, conn->inputBuffer->nextLine, maxLength);
         session->tempBuffer[maxLength] = '\0';
         ClearNextLine(conn->inputBuffer);;
-        WriteToConnection(conn, SET_CONCEAL_OFF);
+        conn->inputBuffer->buffer->echoMode = ECHO_ON;
         WriteToConnection(conn, "Password => ");
-        WriteToConnection(conn, SET_CONCEAL);
+        conn->inputBuffer->buffer->echoMode = ECHO_PASSWORD;
         session->eventHandler = CheckPassword;
     }
 }
@@ -347,7 +371,7 @@ void CheckPassword(Session *session)
 
         /** TODO: Look up user by username in user database. */
         user = GetUserByUsername(session->tempBuffer);
-        WriteToConnection(conn, SET_CONCEAL_OFF);
+        conn->inputBuffer->buffer->echoMode = ECHO_ON;
         if (user == NULL || !AuthenticateUser(user, session->tempBuffer, 
             conn->inputBuffer->nextLine))
         {
@@ -394,7 +418,7 @@ void LoggedIn(Session *session)
     session->user->lastSeen = time(NULL);
     SaveUserDB();
 
-    WriteToConnection(conn, SET_CONCEAL_OFF);
+    conn->inputBuffer->buffer->echoMode = ECHO_ON;
     WriteToConnection(conn, RESET_MODES);
     WriteToConnection(conn, "Welcome %s!\n", session->user->username);
     WriteToConnection(conn, "You are now logged in.\n");
@@ -410,7 +434,7 @@ void Logout(Session *session)
         return;
     }
     conn = session->conn;
-    WriteToConnection(conn, SET_CONCEAL_OFF);
+    conn->inputBuffer->buffer->echoMode = ECHO_ON;
     WriteToConnection(conn, RESET_MODES);
     WriteToConnection(conn, "Goodbye!\n");
     session->eventHandler = NULL;
@@ -475,9 +499,9 @@ void NewUserPromptPassword(Session *session)
     }
     conn = session->conn;
 
-    WriteToConnection(conn, SET_CONCEAL_OFF);
+    conn->inputBuffer->buffer->echoMode = ECHO_ON;
     WriteToConnection(conn, "Enter a password: ");
-    WriteToConnection(conn, SET_CONCEAL);
+    conn->inputBuffer->buffer->echoMode = ECHO_PASSWORD;
     session->eventHandler = NewUserPromptPasswordConfirm;
 }
 
@@ -499,9 +523,9 @@ void NewUserPromptPasswordConfirm(Session *session)
         strncpy(session->tempBuffer, conn->inputBuffer->nextLine, maxLength);
         session->tempBuffer[maxLength] = '\0';
         ClearNextLine(conn->inputBuffer);
-        WriteToConnection(conn, SET_CONCEAL_OFF);
+        conn->inputBuffer->buffer->echoMode = ECHO_ON;
         WriteToConnection(conn, "Confirm your password: ");
-        WriteToConnection(conn, SET_CONCEAL);
+        conn->inputBuffer->buffer->echoMode = ECHO_PASSWORD;
         session->eventHandler = NewUserCheckPassword;
     }
 }
@@ -518,7 +542,7 @@ void NewUserCheckPassword(Session *session)
 
     if (IsNextLineReady(conn->inputBuffer))
     {
-        WriteToConnection(conn, SET_CONCEAL_OFF);
+        conn->inputBuffer->buffer->echoMode = ECHO_ON;
         if (strcmp(session->tempBuffer, conn->inputBuffer->nextLine) != 0)
         {
             WriteToConnection(conn, "Passwords do not match.\n");

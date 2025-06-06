@@ -182,6 +182,20 @@ void Disconnect(Connection *conn, bool closeImmediately)
     conn->connectionStatus = DISCONNECTED;
 }
 
+void WriteCharToConnection(Connection *conn, char c)
+{
+    char message[2];
+    message[0] = c;
+    message[1] = '\0';
+    
+    if (conn == NULL || conn->outputBuffer == NULL)
+    {
+        return;
+    }
+
+    WriteStringToBuffer(conn->outputBuffer, message);
+}
+
 void WriteToConnection(Connection *conn, const char *format, ...)
 {
     va_list args;

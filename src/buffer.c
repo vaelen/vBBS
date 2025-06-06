@@ -103,9 +103,11 @@ Buffer *NewBuffer(int size)
     buffer->inTelnet = 0;
     buffer->inTelnetSB = 0;
     memset(buffer->commandBuffer, 0, sizeof(buffer->commandBuffer));
+    buffer->echoMode = ECHO_OFF;    /* Default echo mode */
     buffer->windowSize = NULL;      /* No handler by default */
     buffer->terminalType = NULL;    /* No handler by default */
     buffer->connectionSpeed = NULL; /* No handler by default */
+    buffer->echo = NULL;            /* No handler by default */
     return buffer;
 }
 
@@ -125,11 +127,30 @@ static void _SetTerminalType(Buffer *buffer, const char *type)
     }
 }
 
-static void _SetConnectionSpeed(Buffer *buffer, int speed)
+static void _SetConnectionSpeed(Buffer *buffer, const char *speed)
 {
     if (buffer !=NULL && buffer->connectionSpeed != NULL)
     {
         buffer->connectionSpeed(buffer->userData, speed);
+    }
+}
+
+static void _EchoData(Buffer *buffer, const char c)
+{
+    if (buffer != NULL && buffer->echo != NULL)
+    {
+        switch (buffer->echoMode)
+        {
+        case ECHO_ON:
+            buffer->echo(buffer->userData, c);
+            break;
+        case ECHO_OFF:
+            break;
+        case ECHO_PASSWORD:
+            /* Echo password characters as asterisks */
+            buffer->echo(buffer->userData, '*');
+            break;
+        }
     }
 }
 
@@ -167,8 +188,8 @@ int BufferRemaining(Buffer *buffer)
 int WriteToBuffer(Buffer *buffer, const char *data, int length)
 {
     int i;
-    int cmd, option, width, height, speed;
-    char terminalType[64];
+    int cmd, option, width, height;
+    char tmp[64];
 
     for (i = 0; i < length; i++)
     {
@@ -197,6 +218,8 @@ int WriteToBuffer(Buffer *buffer, const char *data, int length)
             /* Convert newline to carriage return + line feed */
             *buffer->tail++ = '\r';
             *buffer->tail++ = '\n';
+            _EchoData(buffer, '\r');
+            _EchoData(buffer, '\n');
         }
         else if(data[i] == (char)TELNET_IAC && buffer->handleTelnet)
         {
@@ -204,8 +227,6 @@ int WriteToBuffer(Buffer *buffer, const char *data, int length)
             {
                 /* Start of Telnet command */
                 buffer->inTelnet = 1;
-                buffer->commandBuffer[0] = data[i];
-                buffer->inTelnetSB = 0; /* Reset subnegotiation state */
             }
             else if (buffer->inTelnet > 0 && buffer->inTelnet < 3)
             {
@@ -231,9 +252,6 @@ int WriteToBuffer(Buffer *buffer, const char *data, int length)
 
                 buffer->commandBuffer[buffer->inTelnetSB + 2] = '\0';
 
-                Debug("[TELNET] Subnegotiation, option: %s",
-                      TelnetOption(option));
-
                 if (cmd == 0) switch(option)
                 {
                     case TELNET_OPTION_WINDOW_SIZE:
@@ -241,24 +259,22 @@ int WriteToBuffer(Buffer *buffer, const char *data, int length)
                             buffer->commandBuffer[3];
                         height = (buffer->commandBuffer[4] << 8) |
                             buffer->commandBuffer[5];
-                        Debug("Telnet window size: %dx%d", width, height);
                         _SetWindowSize(buffer, width, height);
                         break;
                     case TELNET_OPTION_TERMINAL_TYPE:
-                        strncpy(terminalType,
+                        strncpy(tmp,
                                (const char *)&buffer->commandBuffer[3],
                                buffer->inTelnetSB - 1);
-                        Debug("Telnet terminal type: %s", terminalType);
-                        _SetTerminalType(buffer, terminalType);
+                        _SetTerminalType(buffer, tmp);
                         break;
                     case TELNET_OPTION_TERMINAL_SPEED:
-                        speed = (buffer->commandBuffer[2] << 8) |
-                            buffer->commandBuffer[3];
-                        Debug("Telnet connection speed: %d", speed);
-                        _SetConnectionSpeed(buffer, speed);
+                        strncpy(tmp,
+                            (const char *)&buffer->commandBuffer[3],
+                            buffer->inTelnetSB - 1);
+                        _SetConnectionSpeed(buffer, tmp);
                         break;
                     default:
-                        Debug("[TELNET] Unhandled subnegotiation option: %s",
+                        Debug("Unhandled telnet subnegotiation option: %s",
                               TelnetOption(option));
                 }
 
@@ -323,6 +339,7 @@ int WriteToBuffer(Buffer *buffer, const char *data, int length)
         else
         {
             *buffer->tail++ = data[i];
+            _EchoData(buffer, data[i]);
         }
     }
     buffer->length = buffer->tail - buffer->bytes; /* Update length */
@@ -406,6 +423,7 @@ InputBuffer *NewInputBuffer(int size)
 
     buffer->buffer->handleANSI = TRUE;   /* Default to handling ANSI */
     buffer->buffer->handleTelnet = TRUE; /* Default to handling Telnet */
+    buffer->buffer->echoMode = ECHO_ON;  /* Default to echoing data back */
 
     buffer->inputMode = LINE_INPUT_MODE;
     buffer->nextLine[0] = '\0';
