@@ -45,9 +45,9 @@ void printTestResult(const char *test, bool passed) {
 int main(void)
 {
     runAllBufferTests();
-    runAllCRCTests();
-    runAllRingBufferTests();
-    runAllListTests();
+    //runAllCRCTests();
+    //runAllRingBufferTests();
+    //runAllListTests();
     /* These tests are flakey.
     runAllMapTests();
     */

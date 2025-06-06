@@ -44,6 +44,10 @@ void Identify(Buffer *out)
 {
     WriteStringToBuffer(out, "[Press Enter to Continue]\n");
     WriteStringToBuffer(out, SET_CONCEAL);
+    WriteStringToBuffer(out, TELNET_DO_SUPPRESS_GO_AHEAD);
+    WriteStringToBuffer(out, TELNET_WILL_SUPPRESS_GO_AHEAD);
+    WriteStringToBuffer(out, TELNET_DONT_ECHO);
+    WriteStringToBuffer(out, TELNET_WILL_ECHO);
     WriteStringToBuffer(out, IDENTIFY);
 }
 

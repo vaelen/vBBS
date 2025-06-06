@@ -234,6 +234,7 @@ void PromptUserName(Session *session)
     conn = session->conn;
 
     WriteToConnection(conn, RESET_MODES);
+    WriteToConnection(conn, SET_CONCEAL_OFF);
     WriteToConnection(conn, "Username (or 'new' to sign up) => ");
     session->eventHandler = PromptPassword;
 }
@@ -567,7 +568,8 @@ void ListUsers(Session *session)
                 user->username, user->email);
         }
     }
-    WriteToConnection(conn, "Press enter to continue...\n");
+    WriteToConnection(conn, "Press any key to continue...\n");
+    SetInputMode(conn->inputBuffer, CHARACTER_INPUT_MODE);
     ClearNextLine(conn->inputBuffer);
     session->eventHandler = session->nextEventHandler;
 }
@@ -589,6 +591,7 @@ void ShowMainMenu(Session *session)
     WriteToConnection(conn, "Choose an option: ");
     
     session->eventHandler = MainMenuSelection;
+    SetInputMode(conn->inputBuffer, CHARACTER_INPUT_MODE);
 }
 
 void MainMenuSelection(Session *session)

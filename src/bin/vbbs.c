@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
 
     ArrayList *sessions = NewArrayList(10, SessionDestructor);
 
-    TelnetListener *telnetListener = NULL;
+    TelnetListener *telnetListener = NULL;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
     int telnetPort = TELNET_PORT;
 
 #ifdef _POSIX_VERSION

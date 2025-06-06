@@ -31,6 +31,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 
 /**
+ * ANSI escape codes for terminal control.
+ * 
  * Wikipedia page on ANSI escape codes:
  * https://en.wikipedia.org/wiki/ANSI_escape_code
  * 
@@ -90,6 +92,15 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SET_STRIKETHROUGH "\033[9m"
 #define SET_STRIKETHROUGH_OFF "\033[29m"
 
+#define CRLF_MODE "\033[20h"
+#define LF_MODE "\033[20l"
+
+#define CURSOR_ON "\033[?25h"
+#define CURSOR_OFF "\033[?25l"
+
+#define ECHO_ON "\033[12l"
+#define ECHO_OFF "\033[12h"
+
 #define RESET_MODES "\033[0m"
 
 #define SET_FG_DEFAULT "\033[39m"
@@ -133,6 +144,93 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SET_BG_RGB(r, g, b) "\033[48;2;" #r ";" #g ";" #b "m"
 #define SET_FG_256(n) "\033[38;5;" #n "m"
 #define SET_BG_256(n) "\033[48;5;" #n "m"
+
+/**
+ * Telnet protocol commands and options.
+ * See https://users.cs.cf.ac.uk/Dave.Marshall/Internet/node141.html
+ * See https://datatracker.ietf.org/doc/html/rfc854 for the Telnet protocol.
+ * See https://www.iana.org/assignments/telnet-options/telnet-options.xhtml
+ * 
+ * Request  Response    Meaning
+ * WILL     DO          Sender requests option, receiver can support it
+ * WILL     DONT        Sender requests option, receiver cannot support it
+ * WONT     DONT        Sender does not request option, receiver acknowledges
+ * DO       WILL        Sender can support option, receiver requests it
+ * DO       WONT        Sender can support option, receiver doesn't request it
+ * DONT     WONT        Sender cannot support option, receiver acknowledges
+ * 
+ * Example: The sender wants to enable ECHO:
+ *   Sender: IAC DO ECHO
+ *   Receiver: IAC WILL ECHO
+ * 
+ * Example: The sender requests the terminal type:
+ *   Sender: IAC SB TERMINAL-TYPE SEND IAC SE
+ *   Receiver: IAC SB TERMINAL-TYPE IS <type> IAC SE
+ * 
+ * Telnet Echo RFC: https://datatracker.ietf.org/doc/html/rfc857
+ * Telnet Line Mode RFC: https://datatracker.ietf.org/doc/html/rfc1184
+ * Telnet Terminal Type RFC: https://datatracker.ietf.org/doc/html/rfc1091
+ * Telnet Window Size RFC: https://datatracker.ietf.org/doc/html/rfc1073
+ */
+
+#define TELNET_IAC  255 /* 0xFF Interpret As Command */
+#define TELNET_DONT 254 /* 0xFE Receiver can't support option*/
+#define TELNET_DO   253 /* 0xFD Sender asks for option support */
+#define TELNET_WONT 252 /* 0xFC Receiver cannot handle option */
+#define TELNET_WILL 251 /* 0xFB Sender says it can handle option*/
+#define TELNET_SB   250 /* 0xFA Subnegotiation */
+#define TELNET_GA   249 /* 0xF9 Go Ahead */
+#define TELNET_EL   248 /* 0xF8 Erase Line */
+#define TELNET_EC   247 /* 0xF7 Erase Character */
+#define TELNET_AYT  246 /* 0xF6 Are You There? */
+#define TELNET_AO   245 /* 0xF5 Abort Output */
+#define TELNET_IP   244 /* 0xF4 Interrupt Process */
+#define TELNET_BRK  243 /* 0xF3 Break */
+#define TELNET_DM   242 /* 0xF2 Data Mark */
+#define TELNET_NOP  241 /* 0xF1 No Operation */
+#define TELNET_SE   240 /* 0xF0 Subnegotiation End */
+
+#define TELNET_SE_IS   0
+#define TELNET_SE_SEND 1
+
+#define TELNET_OPTION_BINARY                0 /* 0x00 */
+#define TELNET_OPTION_ECHO                  1 /* 0x01 */
+#define TELNET_OPTION_SUPPRESS_GO_AHEAD     3 /* 0x03 */
+#define TELNET_OPTION_STATUS                5 /* 0x05 */
+#define TELNET_OPTION_TIMING_MARK           6 /* 0x06 */
+#define TELNET_OPTION_TERMINAL_TYPE         24 /* 0x18 */
+#define TELNET_OPTION_WINDOW_SIZE           31 /* 0x1F */
+#define TELNET_OPTION_TERMINAL_SPEED        32 /* 0x20 */
+#define TELNET_OPTION_FLOW_CONTROL          33 /* 0x21 */
+#define TELNET_OPTION_LINE_MODE             34 /* 0x22 */
+#define TELNET_OPTION_X_DISPLAY_LOCATION    35 /* 0x23 */
+#define TELNET_OPTION_ENV                   36 /* 0x24 */
+#define TELNET_OPTION_ENCRYPTION            38 /* 0x26 */
+#define TELNET_OPTION_NEW_ENVIRON           39 /* 0x27 */
+
+
+#define TELNET_DO_ECHO      "\xFF\xFD\x01" /* Please start echoing*/
+#define TELNET_DONT_ECHO    "\xFF\xFE\x01" /* Do not echo */
+#define TELNET_WILL_ECHO    "\xFF\xFB\x01" /* I will echo */
+#define TELNET_WONT_ECHO    "\xFF\xFC\x01" /* I will not echo */
+
+#define TELNET_DO_LINE_MODE_NEG     "\xFF\xFD\x22"
+#define TELNET_DONT_LINE_MODE_NEG   "\xFF\xFE\x22"
+#define TELNET_WILL_LINE_MODE_NEG   "\xFF\xFB\x22"
+#define TELNET_WONT_LINE_MODE_NEG   "\xFF\xFC\x22"
+
+#define TELNET_DO_SUPPRESS_GO_AHEAD     "\xFF\xFD\x03"
+#define TELNET_DONT_SUPPRESS_GO_AHEAD   "\xFF\xFE\x03"
+#define TELNET_WILL_SUPPRESS_GO_AHEAD   "\xFF\xFB\x03"
+#define TELNET_WONT_SUPPRESS_GO_AHEAD   "\xFF\xFC\x03"
+
+/* Disable line mode editing*/
+#define TELNET_LINE_MODE_DEFAULTS1  "\xFF\xFA\x22\x01\x00\xFF\xF0"
+#define TELNET_LINE_MODE_DEFAULTS2  "\xFF\xFA\x22\xFE\x02\xFF\xF0"
+
+/**
+ * Data structures and functions
+ */
 
 typedef enum
 {

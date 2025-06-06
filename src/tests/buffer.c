@@ -61,6 +61,9 @@ void testIsBufferFull(void) {
     if (IsBufferFull(buffer)) {
         printTestResult("testIsBufferFull", TRUE);
     } else {
+        printf("Expected buffer to be full, but it was not.\n");
+        printf("Buffer length: %d, Max size: %d\n", buffer->length, 
+            buffer->maxSize);
         printTestResult("testIsBufferFull", FALSE);
     }
     DestroyBuffer(buffer);
@@ -95,6 +98,8 @@ void testReadWriteBuffer(void) {
     bytesWritten = WriteToBuffer(buffer, TEST_STRING, strlen(TEST_STRING));
     if (bytesWritten != strlen(TEST_STRING)) {
         printTestResult("testWriteToBuffer", FALSE);
+        printf("Expected to write %zu bytes, but wrote %d bytes.\n", 
+               strlen(TEST_STRING), bytesWritten);
     } else {
         printTestResult("testWriteToBuffer", TRUE);
     }
@@ -123,10 +128,37 @@ void testBufferOverflow(void) {
         return;
     }
     bytesWritten = WriteToBuffer(buffer, TEST_STRING, strlen(TEST_STRING));
-    if (bytesWritten < 0) {
+    if (bytesWritten < (int)strlen(TEST_STRING)) {
         printTestResult("testBufferOverflow", TRUE);
     } else {
+        printf("Expected buffer overflow, but wrote %d bytes.\n", bytesWritten);
         printTestResult("testBufferOverflow", FALSE);
+    }
+    DestroyBuffer(buffer);
+}
+
+void testReplaceNewlines(void) {
+    Buffer *buffer = NewBuffer(100);
+    char *testString = "Hello\nWorld\n";
+    char *resultString = "Hello\r\nWorld\r\n";
+    if (buffer == NULL) {
+        printf("Failed to create buffer\n");
+        printTestResult("testReplaceNewlines", FALSE);
+        return;
+    }
+    buffer->convertNewlines = TRUE; // Enable newline conversion
+    WriteStringToBuffer(buffer, testString);
+    
+    if (buffer->length != (int)strlen(resultString)) {
+        printTestResult("testReplaceNewlines - Length", FALSE);
+    } else {
+        printTestResult("testReplaceNewlines - Length", TRUE);
+    }
+
+    if (strncmp((char *)buffer->bytes, resultString, buffer->length) == 0) {
+        printTestResult("testReplaceNewlines - Content", TRUE);
+    } else {
+        printTestResult("testReplaceNewlines - Content", FALSE);
     }
     DestroyBuffer(buffer);
 }
@@ -138,5 +170,6 @@ void runAllBufferTests(void) {
     testClearBuffer();
     testReadWriteBuffer();
     testBufferOverflow();
+    testReplaceNewlines();
     printf("\n");
 }

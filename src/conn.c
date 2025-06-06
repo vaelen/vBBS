@@ -68,8 +68,10 @@ Connection *NewConnection(void)
         free(conn);
         return NULL;
     }
+    conn->outputBuffer->convertNewlines = TRUE;
     conn->inEscape = FALSE;
     conn->inCSI = FALSE;
+
     return conn;
 }
 
